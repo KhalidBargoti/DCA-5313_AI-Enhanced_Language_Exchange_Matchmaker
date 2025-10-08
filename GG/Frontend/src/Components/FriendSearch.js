@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { FiUserPlus } from 'react-icons/fi';
+
 import {
   handleGetUserNamesApi,
   handleGetUserPreferencesApi,
@@ -107,6 +109,37 @@ const FriendSearch = () => {
     };
     fetchUserData();
   }, [id]);
+
+
+  const handleQuickAddFriend = async (user) => {
+    try {
+      const currentUserId = id;
+      const fullName = `${user.firstName} ${user.lastName}`;
+
+      // Get current list to avoid duplicates
+      const { data } = await handleGetFriendsList(currentUserId);
+      const current = Array.isArray(data?.friendsList) ? data.friendsList : [];
+
+      if (current.includes(fullName)) {
+        setSuccessMessage(`${fullName} is already in your friends list.`);
+        setTimeout(() => setSuccessMessage(''), 2500);
+        return;
+      }
+
+      const updated = [...current, fullName];
+      await handleAddToFriendsList(currentUserId, updated);
+
+      // keep local UI in sync
+      localStorage.setItem('friendsList', JSON.stringify(updated));
+
+      setSuccessMessage(`Added ${fullName} to your friends!`);
+      setTimeout(() => setSuccessMessage(''), 2500);
+    } catch (err) {
+      console.error(err);
+      setSuccessMessage('Could not add friend. Please try again.');
+      setTimeout(() => setSuccessMessage(''), 2500);
+    }
+  };
 
   const fetchUserProfile = async (userId) => {
     try {
@@ -326,98 +359,115 @@ const FriendSearch = () => {
 
   return (
     <div className="friend-search-container">
-      <div className="filter-sidebar">
-        <div className="filter-section">
-          <h3>Filter Users by Name</h3>
-          <input
-            type="text"
-            placeholder="Enter name or email"
-            value={filterInput}
-            onChange={(e) => setFilterInput(e.target.value)}
-          />
-          <button className="filter-btn" onClick={handleNameFilter}>
-            Filter by Name
-          </button>
-        </div>
-
-        <div className="filter-section">
-          <h3>Filter Users by Preference</h3>
-          <input
-            type="text"
-            placeholder="Enter preference"
-            value={preferenceFilterInput}
-            onChange={(e) => setPreferenceFilterInput(e.target.value)}
-          />
-          <button className="filter-btn" onClick={handlePreferenceFilter}>
-            Filter by Preference
-          </button>
-        </div>
-        <button className="btn-back" onClick={handleBack}>
-          Back
+    <div className="filter-sidebar">
+      <div className="filter-section">
+        <h3>Filter Users by Name</h3>
+        <input
+          type="text"
+          placeholder="Enter name or email"
+          value={filterInput}
+          onChange={(e) => setFilterInput(e.target.value)}
+        />
+        <button className="filter-btn" onClick={handleNameFilter}>
+          Filter by Name
         </button>
       </div>
 
-      <div className="friend-search">
-        <h1>User Table</h1>
-        <button
-          className="calculate-score-btn"
-          onClick={calculateAllCompatibilityScores}
-        >
-          Calculate Compatibility Scores
+      <div className="filter-section">
+        <h3>Filter Users by Preference</h3>
+        <input
+          type="text"
+          placeholder="Enter preference"
+          value={preferenceFilterInput}
+          onChange={(e) => setPreferenceFilterInput(e.target.value)}
+        />
+        <button className="filter-btn" onClick={handlePreferenceFilter}>
+          Filter by Preference
         </button>
-
-        {/* Wrap the table in a container */}
-        <div className="table-container">
-          <table className="user-table">
-            <thead>
-              <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>ID</th>
-                <th>Email</th>
-                <th>Gender</th>
-                <th>Profession</th>
-                <th>Hobby</th>
-                <th>Age</th>
-                {/* New Columns */}
-                <th>Native Language</th>
-                <th>Target Language</th>
-                <th>Compatibility Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {userNames.map((user, index) => (
-                <tr
-                  key={index}
-                  onClick={() => handleUserClick(user)}
-                  className="table-row"
-                >
-                  <td>{user.firstName}</td>
-                  <td>{user.lastName}</td>
-                  <td>{user.id}</td>
-                  <td>{user.email}</td>
-                  <td>{user.gender}</td>
-                  <td>{user.profession}</td>
-                  <td>{user.hobby}</td>
-                  <td>{user.age}</td>
-                  {/* Adjusted Field Names with Helper Function */}
-                  <td>{getField(user, ['nativeLanguage', 'native_language'])}</td>
-                  <td>{getField(user, ['targetLanguage', 'target_language'])}</td>
-                  <td>{user.score !== null ? user.score : 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="success-message">
-            <p>{successMessage}</p>
-          </div>
-        )}
       </div>
+      <button className="btn-back" onClick={handleBack}>
+        Back
+      </button>
     </div>
+
+    <div className="friend-search">
+      <h1>User Table</h1>
+      <button
+        className="calculate-score-btn"
+        onClick={calculateAllCompatibilityScores}
+      >
+        Calculate Compatibility Scores
+      </button>
+
+      {/* Wrap the table in a container */}
+      <div className="table-container">
+        <table className="user-table">
+          <thead>
+            <tr>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Gender</th>
+              <th>Profession</th>
+              <th>Hobby</th>
+              <th>Age</th>
+              {/* New Columns */}
+              <th>Native Language</th>
+              <th>Target Language</th>
+              <th>Compatibility Score</th>
+              {/* ➕ Add-Friend column */}
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {userNames.map((user, index) => (
+              <tr
+                key={index}
+                onClick={() => handleUserClick(user)}
+                className="table-row"
+              >
+                <td>{user.firstName}</td>
+                <td>{user.lastName}</td>
+                <td>{user.id}</td>
+                <td>{user.email}</td>
+                <td>{user.gender}</td>
+                <td>{user.profession}</td>
+                <td>{user.hobby}</td>
+                <td>{user.age}</td>
+                {/* Adjusted Field Names with Helper Function */}
+                <td>{getField(user, ["nativeLanguage", "native_language"])}</td>
+                <td>{getField(user, ["targetLanguage", "target_language"])}</td>
+                <td>{user.score !== null ? user.score : "N/A"}</td>
+
+                {/* ➕ Add-Friend button cell */}
+                <td>
+                  <button
+                    className="add-friend-btn"
+                    title="Add friend"
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent triggering row click
+                      handleQuickAddFriend(user);
+                    }}
+                  >
+                    <FiUserPlus size={18} />
+                    {/* or use <span style={{fontSize: '18px'}}>+</span> if not using react-icons */}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="success-message">
+          <p>{successMessage}</p>
+        </div>
+      )}
+    </div>
+  </div>
   );
 };
 
