@@ -2,6 +2,7 @@ import db, { sequelize } from '../models/index';
 import bcrypt from 'bcryptjs';
 
 let user_id = null
+const errorMessage = "Invalid username or password!";
 let handleUserLogin = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try{
@@ -19,7 +20,7 @@ let handleUserLogin = (email, password) => {
                     let check = await bcrypt.compareSync(password, UserAccount.password);
                     if (check){
                         userData.errCode = 0;
-                        userData.errMessage = 'Password matched!'
+                        userData.errMessage = 'Correct username and password'
                         userData.UserAccount = UserAccount;
                         user_id = UserAccount['dataValues']['id']
                         userData.id =  user_id
@@ -29,20 +30,15 @@ let handleUserLogin = (email, password) => {
                         console.log(user_id)
                     } else {
                         userData.errCode = 3;
-                        userData.errMessage = 'Wrong Password!'
+                        userData.errMessage = errorMessage;
                     }
                 }else {
                     userData.errCode = 2;
-                    userData.errMessage = 'Username no longer exists!'
+                    userData.errMessage = errorMessage;
                 }
             }else {
-                /*userDate object {
-                errCode: 1
-                errMessage: "username not exist"
-                }
-                */
                 userData.errCode = 1;
-                userData.errMessage = 'Invalid email!'
+                userData.errMessage = errorMessage;
             }
             resolve(userData);
         }catch(e){
