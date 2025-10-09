@@ -77,9 +77,9 @@ function Login (){
             <div className="login-content">
               <div className="text-login"><h1>Login</h1></div>
               <div className="login-input">
-                <label>Username:</label>
+                <label>Email:</label>
                 <input
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                   value={username}
                   onChange={handleOnChangeUserInput}
                 />
