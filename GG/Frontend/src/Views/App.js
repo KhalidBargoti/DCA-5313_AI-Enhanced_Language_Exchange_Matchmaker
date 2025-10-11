@@ -20,6 +20,7 @@ import PostVideocall from '../Components/PostVideocall';
 import FriendSearch from '../Components/FriendSearch';
 import FriendsList from '../Components/FriendsList';
 import UserReport from '../Components/UserReport';
+import AvailabilityPicker from '../Components/AvailabilityPicker';
 
 const App = () => {
 
@@ -43,6 +44,7 @@ const App = () => {
           <Route path ="/Chat" element ={<Chat/>}/>
           <Route path ="/HelpPage" element ={<HelpPage/>}/>
           <Route path="/FriendsList" element={<FriendsList/>}/>
+          <Route path="/AvailabilityPicker" element={<AvailabilityPicker/>}/>
        </Routes>
       </Router>
 
