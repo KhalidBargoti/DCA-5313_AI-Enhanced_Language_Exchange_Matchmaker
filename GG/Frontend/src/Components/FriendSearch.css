@@ -227,6 +227,78 @@
   color: #555;
 }
 
+/* Availability Filter */
+.availability-btn {
+  background: linear-gradient(135deg, #6344A6 0%, #8B5FBF 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 68, 166, 0.3);
+}
+
+.availability-btn:hover {
+  background: linear-gradient(135deg, #5a3d96 0%, #7a4fa8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 68, 166, 0.4);
+}
+
+.availability-display {
+  margin-top: 15px;
+  padding: 15px;
+  background: #f8f6ff;
+  border: 2px solid #6344A6;
+  border-radius: 8px;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.availability-label {
+  font-weight: 600;
+  color: #6344A6;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.availability-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-slot {
+  background: #6344A6;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(99, 68, 166, 0.3);
+}
+
+.clear-availability-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.clear-availability-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
 /* Back Button Styling */
 .btn-back {
   margin-top: 20px;

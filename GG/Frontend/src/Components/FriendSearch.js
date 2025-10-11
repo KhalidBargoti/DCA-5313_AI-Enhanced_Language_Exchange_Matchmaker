@@ -29,10 +29,51 @@ const FriendSearch = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
+  const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
 
+
+  const handleAvailabilityFilter = () => {
+    if (!selectedAvailability || selectedAvailability.length === 0) {
+      console.log('No availability data to filter by');
+      setSuccessMessage('Please select availability times first');
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+      return;
+    }
+
+    console.log('Filtering users by availability:', selectedAvailability);
+    
+    // TODO: call the backend API with availability data
+    const filteredUsers = allUserNames.filter((user) => {
+      // returns all users atm
+      // TODO: implement the actual availability matching logic
+      return true;
+    });
+
+    setUserNames(filteredUsers);
+    setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
 
   useEffect(() => {
-
+    // Get time slot data from AvailabilityPicker
+    const availabilityParam = search.get('availability');
+    if (availabilityParam) {
+      try {
+        const availabilityData = JSON.parse(availabilityParam);
+        setSelectedAvailability(availabilityData);
+        console.log('Received availability data:', availabilityData);
+        
+        setTimeout(() => {
+          handleAvailabilityFilter();
+        }, 100);
+      } catch (error) {
+        console.error('Error parsing availability data:', error);
+      }
+    }
     
     const fetchUserData = async () => {
       try {
@@ -224,6 +265,15 @@ const FriendSearch = () => {
     }
   };
 
+  const handleClearAvailabilityFilter = () => {
+    setSelectedAvailability(null);
+    setUserNames(allUserNames);
+    setSuccessMessage('Availability filter cleared');
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
+
   
 
   const handleUserClick = async (user) => {
@@ -302,6 +352,15 @@ const FriendSearch = () => {
     setRecentChatPartners(updatedPartners);
   };
 
+  const handleNavigateToAvailabilityPicker = () => {
+    navigate({
+      pathname: '/AvailabilityPicker',
+      search: createSearchParams({
+        id: id,
+      }).toString(),
+    });
+  };
+
   const handleBack = () => {
     navigate({
       pathname: '/Dashboard',
@@ -351,6 +410,28 @@ const FriendSearch = () => {
           <button className="filter-btn" onClick={handlePreferenceFilter}>
             Filter by Preference
           </button>
+        </div>
+
+        <div className="filter-section">
+          <h3>Filter by Availability</h3>
+          <button className="filter-btn availability-btn" onClick={handleNavigateToAvailabilityPicker}>
+            Filter by Availability
+          </button>
+          {selectedAvailability && selectedAvailability.length > 0 && (
+            <div className="availability-display">
+              <p className="availability-label">Selected Times:</p>
+              <div className="availability-slots">
+                {selectedAvailability.map((slot, index) => (
+                  <span key={index} className="availability-slot">
+                    {slot.day} {slot.time}
+                  </span>
+                ))}
+              </div>
+              <button className="clear-availability-btn" onClick={handleClearAvailabilityFilter}>
+                Clear Availability Filter
+              </button>
+            </div>
+          )}
         </div>
         <button className="btn-back" onClick={handleBack}>
           Back
