@@ -10,9 +10,12 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
-
-
+      // define associations here
+      this.hasMany(models.UserAvailability, {
+        foreignKey: 'user_id',
+        onDelete: 'CASCADE'
+      });
+      
     }
   };
   UserProfile.init({
@@ -28,8 +31,11 @@ module.exports = (sequelize, DataTypes) => {
     profession: DataTypes.STRING,
     hobby: DataTypes.STRING,
     mbti: DataTypes.STRING,
-    dates_available: DataTypes.STRING,
-    times_available: DataTypes.STRING,
+    default_time_zone: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'UTC'
+    },
     visibility: DataTypes.STRING
   }, {
     sequelize,
