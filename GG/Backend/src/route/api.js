@@ -1,5 +1,8 @@
 import express from "express";
 import APIController from "../controller/APIController";
+import interestController from "../controller/interestController";
+import userInterestController from "../controller/userInterestController";
+import availabilityController from "../controller/availabilityController";
 
 let router = express.Router();
 
@@ -19,6 +22,19 @@ const initAPIRoute = (app) => {
     router.get('/getUserProficiencyAndRating/:userId', APIController.getUserProficiencyAndRating);
     router.post('/addToFriendsList', APIController.addToFriendsList);
     router.get('/getFriendsList', APIController.getFriendsList);
+
+    router.get('/interests', interestController.listInterests);
+    router.post('/interests', interestController.createInterest);
+
+    router.get('/users/:userId/interests', userInterestController.getUserInterests);
+    router.post('/users/:userId/interests', userInterestController.addUserInterest);
+    router.delete('/users/:userId/interests/:interestId', userInterestController.removeUserInterest);
+    router.put('/users/:userId/interests', userInterestController.replaceUserInterests);
+
+    router.get('/users/:userId/availability', availabilityController.getAvailability);
+    router.post('/users/:userId/availability', availabilityController.addAvailability);
+    router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
+    router.put('/users/:userId/availability', availabilityController.replaceAvailability);
   
     return app.use('/api/v1/', router)
 }

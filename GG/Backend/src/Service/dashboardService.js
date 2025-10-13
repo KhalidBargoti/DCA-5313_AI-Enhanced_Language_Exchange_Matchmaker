@@ -11,10 +11,10 @@ let handleUserDashBoard = (id) => {
                 attributes: ['firstName', 'lastName', 'email']
             });
 
-            // Fetch user profile data (age, gender, hobby, and profession) from UserProfile
+            // Fetch user profile data (age, gender, profession, mbti, zodiac, default_time_zone) from UserProfile
             let userProfile = await db.UserProfile.findOne({
                 where: { id: id },
-                attributes: ['age', 'gender', 'hobby', 'profession']
+                attributes: ['age', 'gender', 'profession', 'mbti', 'zodiac', 'default_time_zone']
             });
 
             if (userAccount) {
@@ -24,8 +24,10 @@ let handleUserDashBoard = (id) => {
                     email: userAccount.email,
                     age: userProfile ? userProfile.age : null,
                     gender: userProfile ? userProfile.gender : null,
-                    hobby: userProfile ? userProfile.hobby : null,
-                    profession: userProfile ? userProfile.profession : null
+                    profession: userProfile ? userProfile.profession : null,
+                    mbti: userProfile ? userProfile.mbti : null,
+                    zodiac: userProfile ? userProfile.zodiac : null,
+                    default_time_zone: userProfile.default_time_zone
                 };
                 userData.errCode = 0;
                 userData.errMessage = 'OK';
