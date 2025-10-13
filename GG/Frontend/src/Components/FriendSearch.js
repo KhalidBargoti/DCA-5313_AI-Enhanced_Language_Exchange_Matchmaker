@@ -32,7 +32,8 @@ const FriendSearch = () => {
   const id = search.get('id');
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
   const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
-
+  const [interestsQuery, setInterestsQuery] = useState('');
+  const [interestsFilterInput, setInterestsFilterInput] = useState('');
 
   const handleAvailabilityFilter = () => {
     if (!selectedAvailability || selectedAvailability.length === 0) {
@@ -125,7 +126,7 @@ const FriendSearch = () => {
           console.log('Full friendsResponse:', friendsResponse);
       
           // Safely access friendsList
-          const friendsList = friendsResponse?.friendsList;
+          const friendsList = friendsResponse?.data?.friendsList;
       
           if (Array.isArray(friendsList)) {
               setUserList(friendsList.join(', ')); // Convert the list to a string
@@ -416,6 +417,22 @@ const FriendSearch = () => {
     return 'N/A';
   };
 
+  // Button-triggered interests filter
+  const filteredUsers = (userNames || []).filter((u) => {
+    const q = (interestsQuery || '').trim().toLowerCase();
+    if (!q) return true; // no committed query -> include all
+
+    const fields = [u.interests, u.interest, u.hobby]
+      .filter((v) => v != null)
+      .flatMap((v) => (Array.isArray(v) ? v : [v]))
+      .map((v) => String(v).toLowerCase());
+
+    const terms = q.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean);
+    if (!terms.length) return true;
+
+    return terms.some((term) => fields.some((f) => f.includes(term)));
+  });
+
   return (
     <div className="friend-search-container">
       <div className="filter-sidebar">
@@ -443,6 +460,34 @@ const FriendSearch = () => {
           <button className="filter-btn" onClick={handlePreferenceFilter}>
             Filter by Preference
           </button>
+        </div>
+
+        <div className="filter-section">
+          <h3>Filter Users by Interest(s)</h3>
+          <input
+            type="text"
+            placeholder="e.g., hiking, photography"
+            value={interestsFilterInput}
+            onChange={(e) => setInterestsFilterInput(e.target.value)}
+          />
+          <small>Tip: separate multiple with commas or spaces.</small>
+          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+            <button
+              className="filter-btn"
+              onClick={() => setInterestsQuery(interestsFilterInput)}
+            >
+              Filter by Interests
+            </button>
+            <button
+              className="filter-btn"
+              onClick={() => {
+                setInterestsFilterInput('');
+                setInterestsQuery('');
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
         <div className="filter-section">
@@ -502,7 +547,7 @@ const FriendSearch = () => {
             </tr>
           </thead>
           <tbody>
-            {userNames.map((user, index) => (
+            {filteredUsers.map((user, index) => (
               <tr
                 key={index}
                 onClick={() => handleUserClick(user)}
