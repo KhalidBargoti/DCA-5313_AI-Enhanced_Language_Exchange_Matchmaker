@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'user_id',
         onDelete: 'CASCADE'
       });
+      this.belongsToMany(models.Interest, {
+        through: models.UserInterest,
+        foreignKey: 'user_id'
+      });
       
     }
   };
@@ -29,8 +33,8 @@ module.exports = (sequelize, DataTypes) => {
     age: DataTypes.INTEGER,
     gender: DataTypes.STRING,
     profession: DataTypes.STRING,
-    hobby: DataTypes.STRING,
     mbti: DataTypes.STRING,
+    zodiac: DataTypes.STRING,
     default_time_zone: {
       type: DataTypes.STRING,
       allowNull: false,
