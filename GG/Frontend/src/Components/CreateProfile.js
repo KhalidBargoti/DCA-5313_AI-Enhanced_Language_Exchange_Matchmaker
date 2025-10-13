@@ -18,11 +18,10 @@ function CreateProfile() {
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
   const [profession, setProfession] = useState('');
-  const [hobby, setHobby] = useState('');
   const [mbti, setMBTI] = useState('');
+  const [zodiac, setZodiac] = useState('');
+  const [defaultTimeZone, setDefaultTimeZone] = useState('');
   const [visibility, setVisibility] = useState('');
-  const [datesAvailable, setDatesAvailable] = useState('');
-  const [timesAvailable, setTimesAvailable] = useState('');
   const [errMsg ,setErrMsg] = useState('');
   
   // States for checking the errors
@@ -61,18 +60,32 @@ function CreateProfile() {
   {value:"Medecine", label:"Medecine"},
   {value:"Scientist", label:"Scientist"},
  ]
- const Hobby = [
-  {value:"Reading", label:"Reading"},
-  {value:"Sport", label: "Sport"},
-  {value:"Gardening", label:"Gardening"},
-  {value:"Workout", label:"Workout"},
-  {value:"Music", label:"Music"},
-  {value:"Art", label:"Art"},
-  {value:"Photography", label:"Photography"},
-  {value:"Writing", label:"Writing"},
-  {value:"Gaming", label:"Gaming"},
-  {value:"Cooking", label:"Cooking"},
-  {value:"Fishing", label:"Fishing"},
+
+ const Zodiac = [
+  { value: "Aries", label: "Aries" },
+  { value: "Taurus", label: "Taurus" },
+  { value: "Gemini", label: "Gemini" },
+  { value: "Cancer", label: "Cancer" },
+  { value: "Leo", label: "Leo" },
+  { value: "Virgo", label: "Virgo" },
+  { value: "Libra", label: "Libra" },
+  { value: "Scorpio", label: "Scorpio" },
+  { value: "Sagittarius", label: "Sagittarius" },
+  { value: "Capricorn", label: "Capricorn" },
+  { value: "Aquarius", label: "Aquarius" },
+  { value: "Pisces", label: "Pisces" },
+ ]
+
+ const TimeZones = [
+  { value: "UTC", label: "UTC" },
+  { value: "America/New_York", label: "America/New_York" },
+  { value: "America/Chicago", label: "America/Chicago" },
+  { value: "America/Denver", label: "America/Denver" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles" },
+  { value: "Europe/London", label: "Europe/London" },
+  { value: "Europe/Paris", label: "Europe/Paris" },
+  { value: "Asia/Seoul", label: "Asia/Seoul" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo" },
  ]
 
  const MBTI = [
@@ -158,28 +171,21 @@ const TimesAvailable = [
  const handleProfession = (selectedOption) => {
   setProfession(selectedOption.value);
  };
- const handleHobby = (selectedOption) => {
-  setHobby(selectedOption.value);
+ const handleZodiac = (selectedOption) => {
+  setZodiac(selectedOption.value);
  };
 
  const handleMBTI = (selectedOption) => {
   setMBTI(selectedOption.value);
  };
 
+ const handleDefaultTimeZone = (selectedOption) => {
+  setDefaultTimeZone(selectedOption.value)
+ };
+
  const handleVisibility = (selectedOption) => {
   setVisibility(selectedOption.value)
  };
-
-const handleDatesAvailable = (selectedOptions) => {
-  const values = selectedOptions.map(option => option.value);
-  setDatesAvailable(values);
-
-};
-const handleTimesAvailable = (selectedOptions) => {
-  const values = selectedOptions.map(option => option.value);
-  setTimesAvailable(values);
-
-};
 
 const [search] = useSearchParams();
  const id = search.get("id");
@@ -197,11 +203,9 @@ const [search] = useSearchParams();
     setError("");
     try{
         // for backend
-        console.log('Sending create: ' + nativeLanguage + targetLanguage + targetLanguageProficiency + age + gender + profession + hobby + mbti + datesAvailable + timesAvailable + visibility);
-      let data = await handleProfileCreationAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, hobby, mbti, "" + datesAvailable, "" + timesAvailable, visibility);
+        console.log('Sending create: ' + nativeLanguage + targetLanguage + targetLanguageProficiency + age + gender + profession + mbti + zodiac + defaultTimeZone + visibility);
+      let data = await handleProfileCreationAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, mbti, zodiac, defaultTimeZone, visibility);
       console.log('Create done')
-      console.log(datesAvailable);
-      console.log(timesAvailable);
 
       if (data && data.errCode !== 0){
           setSubmitted(true);
@@ -317,10 +321,6 @@ const [search] = useSearchParams();
         <Select options={Profession} onChange={handleProfession}/>
         </div>
 
-        <div className='form-group'>
-        <label className="label">Hobby</label>
-        <Select options={Hobby} onChange={handleHobby}/>
-        </div>
 
         <div className='form-group'>
         <label className="label">Personality Type</label>
@@ -328,13 +328,13 @@ const [search] = useSearchParams();
         </div>
 
         <div className='form-group'>
-        <label className="label">Date Availability</label>
-        <Select options={DatesAvailable} isMulti onChange={handleDatesAvailable}/>
+        <label className="label">Zodiac</label>
+        <Select options={Zodiac} onChange={handleZodiac}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Time Availability</label>
-        <Select options={TimesAvailable} isMulti onChange={handleTimesAvailable}/>
+        <label className="label">Default Time Zone</label>
+        <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
         </div>
 
         <div className='form-group'>
