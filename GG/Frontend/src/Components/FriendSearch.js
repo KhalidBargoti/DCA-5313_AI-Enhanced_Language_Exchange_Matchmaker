@@ -216,17 +216,19 @@ const FriendSearch = () => {
       6 * (selectedProfile.gender === currentUser.gender ? 1 : 0);
     const professionScore =
       5 * (selectedProfile.profession === currentUser.profession ? 1 : 0);
-    const hobbyScore =
-      5 * (selectedProfile.hobby === currentUser.hobby ? 1 : 0);
+    const interestsA = (selectedProfile.Interests || []).map(i => i.interest_name || i)
+    const interestsB = (currentUser.Interests || []).map(i => i.interest_name || i)
+    const shared = interestsA.filter(n => interestsB.includes(n))
+    const interestsScore = 2 * shared.length;
     const ageDifferenceScore =
       -0.3 * Math.abs((selectedProfile.age || 0) - (currentUser.age || 0));
 
     const totalScore =
-      genderScore + professionScore + hobbyScore + ageDifferenceScore;
+      genderScore + professionScore + interestsScore + ageDifferenceScore;
 
     console.log('Gender score:', genderScore);
     console.log('Profession score:', professionScore);
-    console.log('Hobby score:', hobbyScore);
+    console.log('Interests score:', interestsScore);
     console.log('Age difference score:', ageDifferenceScore);
     console.log('Total compatibility score:', totalScore);
 
@@ -491,7 +493,10 @@ const FriendSearch = () => {
               <th>Email</th>
               <th>Gender</th>
               <th>Profession</th>
-              <th>Hobby</th>
+              <th>Interests</th>
+              <th>MBTI</th>
+              <th>Zodiac</th>
+              <th>Time Zone</th>
               <th>Age</th>
               {/* New Columns */}
               <th>Native Language</th>
@@ -514,7 +519,10 @@ const FriendSearch = () => {
                 <td>{user.email}</td>
                 <td>{user.gender}</td>
                 <td>{user.profession}</td>
-                <td>{user.hobby}</td>
+                <td>{Array.isArray(user.Interests) ? user.Interests.map(i => i.interest_name).join(', ') : ''}</td>
+                <td>{user.mbti}</td>
+                <td>{user.zodiac}</td>
+                <td>{user.default_time_zone}</td>
                 <td>{user.age}</td>
                 {/* Adjusted Field Names with Helper Function */}
                 <td>{getField(user, ["nativeLanguage", "native_language"])}</td>
