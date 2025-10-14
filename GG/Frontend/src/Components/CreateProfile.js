@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import React from "react";
 import './Registration.css'; 
 import './CreateProfile.css'; 
@@ -6,7 +7,7 @@ import Select from "react-select";
 
 import Button from 'react-bootstrap/Button';
 
-import { handleProfileCreationAPI } from '../Services/userService';
+import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest } from '../Services/userService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
 
@@ -20,6 +21,8 @@ function CreateProfile() {
   const [profession, setProfession] = useState('');
   const [mbti, setMBTI] = useState('');
   const [zodiac, setZodiac] = useState('');
+  const [allInterests, setAllInterests] = useState([]);
+  const [selectedInterests, setSelectedInterests] = useState([]);
   const [defaultTimeZone, setDefaultTimeZone] = useState('');
   const [visibility, setVisibility] = useState('');
   const [errMsg ,setErrMsg] = useState('');
@@ -123,31 +126,37 @@ const DatesAvailable = [
 ];
 
 const TimesAvailable = [
-  { value: "12AM - 1AM", label: "12AM - 1AM" },
-  { value: "1AM - 2AM", label: "1AM - 2AM" },
-  { value: "2AM - 3AM", label: "2AM - 3AM" },
-  { value: "3AM - 4AM", label: "3AM - 4AM" },
-  { value: "4AM - 5AM", label: "4AM - 5AM" },
-  { value: "5AM - 6AM", label: "5AM - 6AM" },
-  { value: "6AM - 7AM", label: "6AM - 7AM" },
-  { value: "7AM - 8AM", label: "7AM - 8AM" },
-  { value: "8AM - 9AM", label: "8AM - 9AM" },
-  { value: "9AM - 10AM", label: "9AM - 10AM" },
-  { value: "10AM - 11AM", label: "10AM - 11AM" },
-  { value: "11AM - 12PM", label: "11AM - 12PM" },
-  { value: "12PM - 1PM", label: "12PM - 1PM" },
-  { value: "1PM - 2PM", label: "1PM - 2PM" },
-  { value: "2PM - 3PM", label: "2PM - 3PM" },
-  { value: "3PM - 4PM", label: "3PM - 4PM" },
-  { value: "4PM - 5PM", label: "4PM - 5PM" },
-  { value: "5PM - 6PM", label: "5PM - 6PM" },
-  { value: "6PM - 7PM", label: "6PM - 7PM" },
-  { value: "7PM - 8PM", label: "7PM - 8PM" },
-  { value: "8PM - 9PM", label: "8PM - 9PM" },
-  { value: "9PM - 10PM", label: "9PM - 10PM" },
-  { value: "10PM - 11PM", label: "10PM - 11PM" },
-  { value: "11PM - 12AM", label: "11PM - 12AM" },
+  { value: "08:00", label: "8AM-9AM" },
+  { value: "09:00", label: "9AM-10AM" },
+  { value: "10:00", label: "10AM-11AM" },
+  { value: "11:00", label: "11AM-12PM" },
+  { value: "12:00", label: "12PM-1PM" },
+  { value: "13:00", label: "1PM-2PM" },
+  { value: "14:00", label: "2PM-3PM" },
+  { value: "15:00", label: "3PM-4PM" },
+  { value: "16:00", label: "4PM-5PM" },
+  { value: "17:00", label: "5PM-6PM" },
+  { value: "18:00", label: "6PM-7PM" },
+  { value: "19:00", label: "7PM-8PM" },
+  { value: "20:00", label: "8PM-9PM"},
 ];
+
+useEffect(() => {
+  const fetchInterests = async () => {
+    try {
+      const response = await handleGetAllInterests();
+      const interestArray = Array.isArray(response.data) ? response.data : response;
+      const formatted = interestArray.map(i => ({
+        value: i.id,
+        label: i.interest_name
+      }));
+      setAllInterests(formatted);
+    } catch (err) {
+      console.error('Failed to fetch interests:', err);
+    }
+  };
+  fetchInterests();
+}, []);
 
  const handleNativeLanguage = (selectedOption) => {
   console.log(selectedOption.value)
@@ -179,6 +188,10 @@ const TimesAvailable = [
   setMBTI(selectedOption.value);
  };
 
+ const handleInterestsChange = (selectedOptions) => {
+  setSelectedInterests(selectedOptions || []);
+ };
+
  const handleDefaultTimeZone = (selectedOption) => {
   setDefaultTimeZone(selectedOption.value)
  };
@@ -205,24 +218,39 @@ const [search] = useSearchParams();
         // for backend
         console.log('Sending create: ' + nativeLanguage + targetLanguage + targetLanguageProficiency + age + gender + profession + mbti + zodiac + defaultTimeZone + visibility);
       let data = await handleProfileCreationAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, mbti, zodiac, defaultTimeZone, visibility);
-      console.log('Create done')
+      console.log('Create done');
+
+      // add user interests
+      if (selectedInterests.length > 0) {
+        const interestIds = selectedInterests.map(i => i.value);
+      
+        try {
+          for (const interestId of interestIds) {
+            await handleAddUserInterest(id, interestId);
+            console.log(`Added interest ${interestId} for user ${id}`);
+          }
+          console.log("All user interests added!");
+        } catch (error) {
+          console.error("Failed to add user interests:", error);
+        }
+      }
 
       if (data && data.errCode !== 0){
           setSubmitted(true);
           setErrMsg(data.message);
       }
       if (data && data.errCode === 0){
-      // todo when login successfull!
-      setSubmitted(true);
-      console.log("Profile Creation Successful!")
+        // todo when login successfull!
+        setSubmitted(true);
+        console.log("Profile Creation Successful!");
       }
     } catch(error){
       if (error.response){
         if (error.response.data){
                 setErrMsg(error.response.data.message)
                 console.log(errMsg)
-    }
-  }
+        }
+      }
     }
     
   
@@ -330,6 +358,14 @@ const [search] = useSearchParams();
         <div className='form-group'>
         <label className="label">Zodiac</label>
         <Select options={Zodiac} onChange={handleZodiac}/>
+        </div>
+
+        <div className='form-group'>
+        <label className="label">Interests</label>
+        <Select isMulti
+          options={allInterests}
+          onChange={handleInterestsChange}
+          value={selectedInterests}/>
         </div>
 
         <div className='form-group'>
