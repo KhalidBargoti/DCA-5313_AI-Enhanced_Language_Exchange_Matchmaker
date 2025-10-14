@@ -32,6 +32,8 @@ const FriendSearch = () => {
   const id = search.get('id');
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
   const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
+  const [selectedMbti, setSelectedMbti] = useState([]);
+  const [selectedZodiac, setSelectedZodiac] = useState([]);
 
 
   const handleAvailabilityFilter = () => {
@@ -125,7 +127,7 @@ const FriendSearch = () => {
           console.log('Full friendsResponse:', friendsResponse);
       
           // Safely access friendsList
-          const friendsList = friendsResponse?.friendsList;
+          const friendsList = friendsResponse?.data?.friendsList;
       
           if (Array.isArray(friendsList)) {
               setUserList(friendsList.join(', ')); // Convert the list to a string
@@ -418,6 +420,57 @@ const FriendSearch = () => {
     return 'N/A';
   };
 
+  const MBTI_OPTIONS = [
+  'INTJ','INTP','ENTJ','ENTP',
+  'INFJ','INFP','ENFJ','ENFP',
+  'ISTJ','ISFJ','ESTJ','ESFJ',
+  'ISTP','ISFP','ESTP','ESFP'
+  ];
+
+  const ZODIAC_OPTIONS = [
+    'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+    'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
+  ];
+
+  // Convert <select multiple> event to an array of values
+  const toValues = (e) => Array.from(e.target.selectedOptions).map(o => o.value);
+
+  // Apply MBTI/Zodiac filters (and respect the Name textbox)
+  const applyPersonalityFilters = () => {
+    let base = allUserNames;
+
+    // Name/email filter (re-use your name textbox)
+    const nameNeedle = (filterInput || '').trim().toLowerCase();
+    if (nameNeedle) {
+      base = base.filter(user =>
+        (user.firstName || '').toLowerCase().includes(nameNeedle) ||
+        (user.lastName  || '').toLowerCase().includes(nameNeedle) ||
+        (user.email     || '').toLowerCase().includes(nameNeedle)
+      );
+    }
+
+    // MBTI (case-insensitive; allow multiple)
+    if (selectedMbti.length) {
+      const setMbti = new Set(selectedMbti.map(v => v.toUpperCase()));
+      base = base.filter(u => setMbti.has(String(u.mbti || '').toUpperCase()));
+    }
+
+    // Zodiac (case-insensitive; allow multiple)
+    if (selectedZodiac.length) {
+      const setZ = new Set(selectedZodiac.map(v => v.toLowerCase()));
+      base = base.filter(u => setZ.has(String(u.zodiac || '').toLowerCase()));
+    }
+
+    setUserNames(base);
+  };
+
+  // Clear all personality filters
+  const clearPersonalityFilters = () => {
+    setSelectedMbti([]);
+    setSelectedZodiac([]);
+    setUserNames(allUserNames);
+  };
+
   return (
     <div className="friend-search-container">
       <div className="filter-sidebar">
@@ -435,16 +488,44 @@ const FriendSearch = () => {
         </div>
 
         <div className="filter-section">
-          <h3>Filter Users by Preference</h3>
-          <input
-            type="text"
-            placeholder="Enter preference"
-            value={preferenceFilterInput}
-            onChange={(e) => setPreferenceFilterInput(e.target.value)}
-          />
-          <button className="filter-btn" onClick={handlePreferenceFilter}>
-            Filter by Preference
-          </button>
+          <h3>Filter Users by MBTI & Zodiac</h3>
+
+          <label className="filter-label">MBTI (multi-select)</label>
+          <select
+            multiple
+            size={6}
+            value={selectedMbti}
+            onChange={(e) => setSelectedMbti(toValues(e))}
+            className="filter-multiselect"
+          >
+            {MBTI_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+
+          <label className="filter-label" style={{ marginTop: 10 }}>Zodiac (multi-select)</label>
+          <select
+            multiple
+            size={6}
+            value={selectedZodiac}
+            onChange={(e) => setSelectedZodiac(toValues(e))}
+            className="filter-multiselect"
+          >
+            {ZODIAC_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button className="filter-btn" onClick={applyPersonalityFilters}>
+              Apply Filters
+            </button>
+            <button className="filter-btn" onClick={clearPersonalityFilters}>
+              Clear
+            </button>
+          </div>
+
+          <small>Tip: Hold <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> or <kbd>Shift</kbd> to select multiple.</small>
         </div>
 
         <div className="filter-section">
