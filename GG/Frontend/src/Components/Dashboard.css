@@ -136,19 +136,5 @@
     font-size: 20px;
   }
 
-  .ai-placeholder {
-    grid-column: 2/3;
-    width: 300px;
-  }
-
- /* .ai-placeholder h2 {
-    font-size: 18px;
-    margin-bottom: 5px;
-    color: #3a287a;
-  }
-
-  .ai-text p {
-    font-size: 14px;
-  }*/
 
 }
