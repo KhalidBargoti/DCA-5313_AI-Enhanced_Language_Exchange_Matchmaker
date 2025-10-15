@@ -135,4 +135,23 @@
     height: 150px;
     font-size: 20px;
   }
+
+  .ai-assistant-placeholder {
+    grid-column: span 3;
+    text-align: center;
+    margin-top: 30px;
+    padding: 30px;
+    border: 2px dashed #b7a4f2;
+    border-radius: 12px;
+    background-color: #f5f2ff;
+    color: #4b3b77;
+    font-size: 18px;
+    animation: fadeIn 0.8s ease-in;
+  }
+
+  .ai-assistant-placeholder h2 {
+    margin-bottom: 10px;
+    color: #3a287a;
+  }
+
 }
