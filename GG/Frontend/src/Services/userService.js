@@ -80,6 +80,48 @@ const handleGetFriendsList = (userId) => {
     return axios.get(`/api/v1/getFriendsList?id=${userId}`);
 };
 
+const handleGetAllInterests = () => {
+    return axios.get('/api/v1/interests');
+};
+
+const handleCreateInterest = (interestName) => {
+    return axios.post('/api/v1/interests', { interest_name: interestName });
+};
+
+const handleGetUserInterests = (userId) => {
+    return axios.get(`/api/v1/users/${userId}/interests`);
+};
+
+const handleAddUserInterest = (userId, interest) => {
+    return axios.post(`/api/v1/users/${userId}/interests`, { interest });
+};
+
+const handleRemoveUserInterest = (userId, interestId) => {
+    return axios.delete(`/api/v1/users/${userId}/interests/${interestId}`);
+};
+
+const handleReplaceUserInterests = (userId, interestIds) => {
+    return axios.put(`/api/v1/users/${userId}/interests`, { interest_ids: interestIds });
+};
+
+const handleGetUserAvailability = (userId) => {
+    return axios.get(`/api/v1/users/${userId}/availability`);
+};
+
+const handleAddUserAvailability = (userId, slots) => {
+    // If a single time slot is passed, wrap it in an array
+    const formattedSlots = Array.isArray(slots) ? slots : [slots];
+    return axios.post(`/api/v1/users/${userId}/availability`, { slots: formattedSlots });
+};
+
+const handleRemoveUserAvailability = (userId, availabilityId) => {
+    return axios.delete(`/api/v1/users/${userId}/availability/${availabilityId}`);
+};
+
+const handleReplaceUserAvailability = (userId, slots) => {
+    return axios.put(`/api/v1/users/${userId}/availability`, { slots });
+};
+
 export const handleGetUserProficiencyAndRating = async (userId) => {
     try {
         const response = await axios.get(`/api/v1/getUserProfile/${userId}`);
@@ -91,4 +133,19 @@ export const handleGetUserProficiencyAndRating = async (userId) => {
 };
 
 
-export {handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleChatApi, handleGetUser, getMessages, addMessage, handleTranslator, handleMatch, handleGetProfile, handleDataPopulation, handleUserLogout, handleUpdateRating, handleUpdateProficiency, handleAddComment, handleAddToFriendsList, handleGetFriendsList}
+export {
+        handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleChatApi, 
+        handleGetUser, getMessages, addMessage, handleTranslator, handleMatch, handleGetProfile,
+        handleDataPopulation, handleUserLogout, handleUpdateRating, handleUpdateProficiency,
+        handleAddComment, handleAddToFriendsList, handleGetFriendsList,
+        handleGetAllInterests,
+        handleCreateInterest,
+        handleGetUserInterests,
+        handleAddUserInterest,
+        handleRemoveUserInterest,
+        handleReplaceUserInterests,
+        handleGetUserAvailability,
+        handleAddUserAvailability,
+        handleRemoveUserAvailability,
+        handleReplaceUserAvailability
+};
