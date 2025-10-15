@@ -72,13 +72,13 @@
 }
 
 .btn-action {
-  width: 350px; /* Square button dimensions */
-  height: 350px;
+  width: 200px; /* Square button dimensions */
+  height: 200px;
   border-radius: 15px; /* Slightly rounded corners */
   border: none;
   color: white;
   background-color: #6344A6; /* Solid purple */
-  font-size: 40px; /* Adjust text size */
+  font-size: 20px; /* Adjust text size */
   text-align: center;
   cursor: pointer;
   display: flex; /* Center text inside the button */
@@ -136,7 +136,7 @@
     font-size: 20px;
   }
 
-  .ai-assistant-placeholder {
+  .ai-placeholder {
     grid-column: span 3;
     text-align: center;
     margin-top: 30px;
@@ -147,11 +147,21 @@
     color: #4b3b77;
     font-size: 18px;
     animation: fadeIn 0.8s ease-in;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
-  .ai-assistant-placeholder h2 {
-    margin-bottom: 10px;
+  .ai-placeholder h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
     color: #3a287a;
+  }
+
+  .ai-text p {
+    font-size: 14px;
   }
 
 }
