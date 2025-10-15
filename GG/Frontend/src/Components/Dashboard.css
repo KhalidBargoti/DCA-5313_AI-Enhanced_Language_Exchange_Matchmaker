@@ -103,6 +103,10 @@
   }
 }
 
+.ai-placeholder {
+  grid-column: span 3;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
