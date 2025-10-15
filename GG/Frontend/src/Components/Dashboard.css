@@ -137,24 +137,11 @@
   }
 
   .ai-placeholder {
-    grid-column: span 3;
-    text-align: center;
-    margin-top: 30px;
-    padding: 30px;
-    border: 2px dashed #b7a4f2;
-    border-radius: 12px;
-    background-color: #f5f2ff;
-    color: #4b3b77;
-    font-size: 18px;
-    animation: fadeIn 0.8s ease-in;
-    cursor: default;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    grid-column: 2/3;
+    width: 300px;
   }
 
-  .ai-placeholder h2 {
+ /* .ai-placeholder h2 {
     font-size: 18px;
     margin-bottom: 5px;
     color: #3a287a;
@@ -162,6 +149,6 @@
 
   .ai-text p {
     font-size: 14px;
-  }
+  }*/
 
 }
