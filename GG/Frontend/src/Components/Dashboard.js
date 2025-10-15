@@ -215,7 +215,11 @@ function Dashboard()  {
           <button className="btn-action" onClick={call}>Call</button>
           <button className="btn-action" onClick={Translator}>Translator</button>
           <button className="btn-action" onClick={goToUserReport}>User Report</button>
-      </div>
+          <div className="ai-assistant-placeholder">
+            <h2>AI Assistant (TBD)</h2>
+            <p>Space for AI language assistant.</p>
+          </div>
+          </div>
 
     </div>
   );
