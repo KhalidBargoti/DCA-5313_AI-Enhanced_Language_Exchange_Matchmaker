@@ -215,9 +215,9 @@ function Dashboard()  {
           <button className="btn-action" onClick={call}>Call</button>
           <button className="btn-action" onClick={Translator}>Translator</button>
           <button className="btn-action" onClick={goToUserReport}>User Report</button>
-          <button className="btn-action ai-placeholder" disabled>
+          <button className="btn-action" disabled>
             <div className="ai-text">
-              <h2>AI Assistant (TBD)</h2>
+              <h2>AI Assistant</h2>
               <p>Coming soon</p>
             </div>
           </button>
