@@ -13,7 +13,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList } from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -89,67 +89,65 @@ const FriendSearch = () => {
         const profilesResponse = await handleGetUserPreferencesApi();
 
         // Merge user data with their profiles
-        const mergedUsers = userResponse.data.map((user) => {
-          const userProfile = profilesResponse.data.find(
-            (profile) => profile.id === user.id
-          );
-          const mergedUser = {
-            ...user,
-            ...userProfile, // Spread profile data into user object
-            score: null, // Initialize compatibility score
-          };
-          console.log('Merged User:', mergedUser); // Debugging Line
-          return mergedUser;
-        });
-
-        const visibleUsers = mergedUsers.filter(
-          (user) => user.visibility === 'Show'
+        const mergedUsers = await Promise.all(
+          userResponse.data.map(async (user) => {
+            const userProfile = profilesResponse.data.find(
+              (profile) => profile.id === user.id
+            );
+        
+            // Fetch current user's interests
+            let userInterests = [];
+            try {
+              const interestsResponse = await handleGetUserInterests(user.id);
+              userInterests = interestsResponse || [];
+              console.log(`User interests received for user ${user.id}:`, userInterests);
+            } catch (err) {
+              console.error(`Error fetching interests for user ${user.id}:`, err);
+            }
+            // Fetch current user's availability
+            let userAvailability = [];
+            try {
+              const availabilityResponse = await handleGetUserAvailability(user.id);
+              userAvailability = availabilityResponse || [];
+              console.log(`User availability received for user ${user.id}:`, userAvailability);
+            } catch (err) {
+              console.error(`Error fetching availability for user ${user.id}:`, err);
+            }
+        
+            return {
+              ...user,
+              ...userProfile,
+              Interests: userInterests,
+              Availability: userAvailability,
+              score: null,
+            };
+          })
         );
+
+        // Step 3: Filter visible users
+        const visibleUsers = mergedUsers.filter((user) => user.visibility === 'Show');
 
         console.log('Visible users:', visibleUsers);
 
         setUserNames(visibleUsers);
         setAllUserNames(visibleUsers);
 
-        // Retrieve stored current user data from userData.js
+        // Step 4: Get current user info
         const currentUserData = getUserData();
         setCurrentUser(currentUserData);
 
-        console.log('Fetched user names:', userResponse.data);
-        console.log('Retrieved current user data:', currentUserData);
-        console.log('current user id:', id);
-
-        // Fetch friends list for the current user
-        try {
-          console.log('Fetching friends list for user ID:', id);
-      
-          const friendsResponse = await handleGetFriendsList(id);
-          console.log('Full friendsResponse:', friendsResponse);
-      
-          // Safely access friendsList
-          const friendsList = friendsResponse?.data?.friendsList;
-      
-          if (Array.isArray(friendsList)) {
-              setUserList(friendsList.join(', ')); // Convert the list to a string
-              console.log(userList);
-          } else {
-              console.error('Unexpected friendsList type:', friendsList);
-              setUserList(''); // Reset to empty string on unexpected structure
-          }
-        } catch (friendsError) {
-            console.error('Error fetching friends list:', friendsError);
-            setUserList(''); // Reset to empty string on fetch error
-        }
-      
+        const currentUserId = currentUserData?.id || id; // fallback
+        console.log('Current user ID (resolved):', currentUserId);
 
 
         setLoading(false);
       } catch (err) {
-        setError(err);
         console.error('Error in fetchUserData:', err);
+        setError(err);
         setLoading(false);
       }
     };
+
     fetchUserData();
   }, [id]);
 
@@ -583,6 +581,7 @@ const FriendSearch = () => {
               <th>Native Language</th>
               <th>Target Language</th>
               <th>Compatibility Score</th>
+              <th>Availability</th>
               {/* ➕ Add-Friend column */}
               <th>Actions</th>
             </tr>
@@ -609,6 +608,7 @@ const FriendSearch = () => {
                 <td>{getField(user, ["nativeLanguage", "native_language"])}</td>
                 <td>{getField(user, ["targetLanguage", "target_language"])}</td>
                 <td>{user.score !== null ? user.score : "N/A"}</td>
+                <td>{Array.isArray(user.Availability) ? user.Availability.map(a => `${a.day_of_week} ${a.start_time}`).join(', '): ''}</td>
 
                 {/* ➕ Add-Friend button cell */}
                 <td>
