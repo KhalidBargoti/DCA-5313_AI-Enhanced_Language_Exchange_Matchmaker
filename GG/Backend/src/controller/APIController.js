@@ -220,63 +220,74 @@ let getUserProficiencyAndRating = async (req, res) => {
 };
 
 let addToFriendsList = async (req, res) => {
-    let { userId, friendsList } = req.body; // Expecting friendsList as an array or a string
-    if (!userId || !friendsList) {
-        return res.status(400).json({
-            message: 'Missing userId or friendsList'
-        });
-    }
+  let { userId, friendsList } = req.body; // friendsList can be array or JSON string
 
-    try {
-        // Update logic
-        await pool.execute('UPDATE UserProfile SET friends_list = ? WHERE id = ?', [
-            friendsList.join(', '), // Ensure this is a string
-            userId,
-        ]);
+  if (!userId || friendsList == null) {
+    return res.status(400).json({ message: 'Missing userId or friendsList' });
+  }
 
-        return res.status(200).json({
-            message: 'Friends list updated successfully',
-        });
-    } catch (error) {
-        console.error('Error updating friends list:', error);
-        return res.status(500).json({
-            message: 'Error updating friends list',
-            error: error.message,
-        });
+  // Normalize to an array
+  try {
+    if (typeof friendsList === 'string') {
+      friendsList = JSON.parse(friendsList); // if frontend sent a JSON string
     }
+  } catch (e) {
+    return res.status(400).json({ message: 'friendsList must be a JSON array or array' });
+  }
+
+  if (!Array.isArray(friendsList)) {
+    return res.status(400).json({ message: 'friendsList must be an array' });
+  }
+
+  // Optional: dedupe + coerce to numbers/strings consistently
+  const normalized = Array.from(new Set(friendsList.map(v => Number.isNaN(Number(v)) ? String(v) : Number(v))));
+
+  try {
+    // IMPORTANT: pass valid JSON into a JSON column
+    await pool.execute(
+      'UPDATE UserProfile SET friends_list = CAST(? AS JSON) WHERE id = ?',
+      [JSON.stringify(normalized), userId]
+    );
+
+    return res.status(200).json({ message: 'Friends list updated successfully' });
+  } catch (error) {
+    console.error('Error updating friends list:', error);
+    return res.status(500).json({ message: 'Error updating friends list', error: error.message });
+  }
 };
 
 let getFriendsList = async (req, res) => {
-    const { id: userId } = req.query;
+  const { id: userId } = req.query;
 
-    if (!userId) {
-        return res.status(400).json({
-            message: 'Missing user ID',
-        });
+  if (!userId) {
+    return res.status(400).json({ message: 'Missing user ID' });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      'SELECT friends_list FROM UserProfile WHERE id = ?',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    try {
-        const [rows] = await pool.execute(
-            'SELECT friends_list FROM UserProfile WHERE id = ?',
-            [userId]
-        );
+    const raw = rows[0].friends_list;
 
-        if (rows.length > 0) {
-            const friendsList = rows[0].friends_list
-                ? rows[0].friends_list.split(', ')
-                : [];
-            return res.status(200).json({ friendsList });
-        } else {
-            return res.status(404).json({
-                message: 'User not found',
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching friends list:', error);
-        return res.status(500).json({
-            message: 'Error fetching friends list',
-        });
-    }
+    // mysql2 will usually give you back a JS object/array for JSON columns.
+    // But if your driver returns a string, parse it.
+    const friendsList = Array.isArray(raw)
+      ? raw
+      : raw
+        ? (typeof raw === 'string' ? JSON.parse(raw) : raw)
+        : [];
+
+    return res.status(200).json({ friendsList });
+  } catch (error) {
+    console.error('Error fetching friends list:', error);
+    return res.status(500).json({ message: 'Error fetching friends list', error: error.message });
+  }
 };
 
 module.exports = { 

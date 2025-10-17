@@ -27,7 +27,7 @@ let handleUserDashBoard = (id) => {
                     profession: userProfile ? userProfile.profession : null,
                     mbti: userProfile ? userProfile.mbti : null,
                     zodiac: userProfile ? userProfile.zodiac : null,
-                    default_time_zone: userProfile.default_time_zone
+                    default_time_zone: userProfile.default_time_zone ?? 'UTC'
                 };
                 userData.errCode = 0;
                 userData.errMessage = 'OK';
