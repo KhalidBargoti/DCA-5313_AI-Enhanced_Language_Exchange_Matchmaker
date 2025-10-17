@@ -15,6 +15,7 @@ const handleRegisterApi= (firstName, lastName, Email, userPassword) => {
 const handleProfileCreationAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility) => {
     return axios.post('/CreateProfile', {id: id, native_language: native_language, target_language: target_language, target_language_proficiency: target_language_proficiency, age: age, gender: gender, profession: profession, mbti: mbti, zodiac: zodiac, default_time_zone: default_time_zone, visibility: visibility}) ;
 }
+
 //return
 const handleChatApi = (senderId) => {
     return axios.get(`/Chats/${senderId}`)
@@ -122,6 +123,7 @@ const handleReplaceUserAvailability = (userId, slots) => {
     return axios.put(`/api/v1/users/${userId}/availability`, { slots });
 };
 
+
 export const handleGetUserProficiencyAndRating = async (userId) => {
     try {
         const response = await axios.get(`/api/v1/getUserProfile/${userId}`);
@@ -130,6 +132,11 @@ export const handleGetUserProficiencyAndRating = async (userId) => {
         console.error('Error fetching user proficiency and rating:', error);
         throw error;
     }
+};
+
+//update exisiting user
+export const handleUpdateUserProfileAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility) => {
+    return axios.post('/api/update-profile', {id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility}) ;
 };
 
 

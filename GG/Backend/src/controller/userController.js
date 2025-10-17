@@ -65,7 +65,7 @@ let handleProfileCreation = async (req, res) => {
     let id = req.body.id
     let save = true
     //console.log("Id passed to profile controller is: ", id)
-    // Call handleProfileCreation to have the value of userData
+    // Call handleProfileCreation to have the value of userData //API right??
     let userData = await userService.handleProfileCreation(id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, save)
     console.log(userData)
     return res.status(200).json({
@@ -74,6 +74,51 @@ let handleProfileCreation = async (req, res) => {
          user: userData.user? userData.user : {}
     })
 }
+
+//idk
+let handleUpdateUser = async (req, res) => {
+    console.log("Updating user profile...");
+
+    let {
+        id,
+        native_language,
+        target_language,
+        target_language_proficiency,
+        age,
+        gender,
+        profession,
+        mbti,
+        zodiac,
+        default_time_zone,
+        visibility
+    } = req.body;
+
+    let save = true;
+
+    let userData = await userService.handleUpdateUser(
+        id,
+        native_language,
+        target_language,
+        target_language_proficiency,
+        age,
+        gender,
+        profession,
+        mbti,
+        zodiac,
+        default_time_zone,
+        visibility,
+        save
+    );
+
+    console.log(userData);
+    return res.status(200).json({
+        errorCode: userData.errCode,
+        message: userData.errMessage,
+        user: userData.user ? userData.user : {}
+    });
+};
+
+
 
 let handleDataPopulation = async (req, res) => {
     let languages = ["English", "Korean"];
@@ -161,5 +206,6 @@ module.exports = {
     handleTranslator : handleTranslator,
     handleGetProfile : handleGetProfile,
     handleDataPopulation : handleDataPopulation,
-    handleLogout : handleLogout
+    handleLogout : handleLogout,
+    handleUpdateUser : handleUpdateUser
 }

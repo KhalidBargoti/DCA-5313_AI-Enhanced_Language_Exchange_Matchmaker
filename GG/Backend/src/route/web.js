@@ -22,6 +22,7 @@ let initWebRoute = (app) => {
     router.post('/Register', userController.handleRegister)
     router.post('/Translator', userController.handleTranslator)
     router.post('/CreateProfile', userController.handleProfileCreation)
+    //router.put('/UpdateProfile', userController.handleUpdateUser) //whatever this means
     router.post('/Dashboard', dashBoardController.handleDashBoard)
     router.post('/findFriends', friendsController.findFriends)
     router.post('/createFriends/:id1/:id2', friendsController.createFriends)
