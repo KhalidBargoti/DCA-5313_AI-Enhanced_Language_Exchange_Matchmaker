@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiUserPlus } from 'react-icons/fi';
+import { DateTime } from "luxon";  
 
 import {
   handleGetUserNamesApi,
@@ -47,38 +48,52 @@ const FriendSearch = () => {
     }
 
     console.log('Filtering users by availability:', selectedAvailability);
-    
-    // TODO: call the backend API with availability data
-    const filteredUsers = allUserNames.filter((user) => {
-      // returns all users atm
-      // TODO: implement the actual availability matching logic
-      return true;
-    });
+    try {
+      // Normalize selected availability to UTC
+      const selectedSlotsUTC = selectedAvailability.map(slot => {
+        const convertTo24Hr = (timeStr) => {
+          const dt = DateTime.fromFormat(timeStr.trim(), "h a", { zone: currentUser?.default_time_zone || "UTC" });
+          return dt.isValid ? dt.toFormat("HH:mm") : null;
+        };
+        
+        const start = convertTo24Hr(slot.time);
+        const end = DateTime.fromFormat(start, "HH:mm").plus({ hours: 1 }).toFormat("HH:mm"); // assume 1-hour slot
+        return {
+          day_of_week: slot.day,
+          start_utc: DateTime.fromISO(`2024-01-01T${start}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+          end_utc: DateTime.fromISO(`2024-01-01T${end}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+        };
+      });
+      // Filter all users
+      const filteredUsers = allUserNames.filter(user => {
+        if (!Array.isArray(user.Availability) || user.Availability.length === 0)
+          return false;
 
-    setUserNames(filteredUsers);
-    setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+        const userZone = user.default_time_zone || "UTC";
+        return user.Availability.some(userSlot => {
+          const userStartUTC = DateTime.fromISO(`2024-01-01T${userSlot.start_time}`, { zone: userZone }).toUTC();
+          const userEndUTC = DateTime.fromISO(`2024-01-01T${userSlot.end_time}`, { zone: userZone }).toUTC();
+
+          return selectedSlotsUTC.some(selSlot =>
+            userSlot.day_of_week === selSlot.day_of_week &&
+            userStartUTC.toISO() === selSlot.start_utc.toISO() &&
+            userEndUTC.toISO() === selSlot.end_utc.toISO()
+          );
+        });
+      });
+      setUserNames(filteredUsers);
+      setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error("Error filtering by availability:", error);
+      setSuccessMessage("Error applying availability filter");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    }
   };
 
   useEffect(() => {
-    // Get time slot data from AvailabilityPicker
-    const availabilityParam = search.get('availability');
-    if (availabilityParam) {
-      try {
-        const availabilityData = JSON.parse(availabilityParam);
-        setSelectedAvailability(availabilityData);
-        console.log('Received availability data:', availabilityData);
-        
-        setTimeout(() => {
-          handleAvailabilityFilter();
-        }, 100);
-      } catch (error) {
-        console.error('Error parsing availability data:', error);
-      }
-    }
-    
     const fetchUserData = async () => {
       try {
         console.log(
@@ -151,6 +166,29 @@ const FriendSearch = () => {
     fetchUserData();
   }, [id]);
 
+  useEffect(() => {
+    const availabilityParam = search.get('availability');
+    if (availabilityParam) {
+      try {
+        const availabilityData = JSON.parse(availabilityParam);
+        console.log('Received availability data from URL:', availabilityData);
+        setSelectedAvailability(availabilityData);
+      } catch (error) {
+        console.error('Error parsing availability data:', error);
+      }
+    }
+  }, [search]);
+
+  useEffect(() => {
+    if (
+      selectedAvailability &&
+      selectedAvailability.length > 0 &&
+      allUserNames.length > 0
+    ) {
+      console.log("Auto-applying availability filter...");
+      handleAvailabilityFilter();
+    }
+  }, [selectedAvailability, allUserNames]);
 
   const handleQuickAddFriend = async (user) => {
     try {
