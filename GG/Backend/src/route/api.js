@@ -3,6 +3,7 @@ import APIController from "../controller/APIController";
 import interestController from "../controller/interestController";
 import userInterestController from "../controller/userInterestController";
 import availabilityController from "../controller/availabilityController";
+import userController from "../controller/userController.js";//added this
 
 let router = express.Router();
 
@@ -11,6 +12,7 @@ const initAPIRoute = (app) => {
     router.get('/users', APIController.getAllUsers); // method get
     router.post('/create-user', APIController.createNewUser); // method post
     router.put('/update-user', APIController.updateUser); // method put
+    router.post('/update-profile', userController.handleUpdateUser);//added this
     router.delete('/delete-user/:id', APIController.deleteUser); // method delete
     router.get('/user-names', APIController.getUserNames); // GET method to fetch user names
     router.get('/user-preferences', APIController.getUserPreferences);
@@ -35,6 +37,7 @@ const initAPIRoute = (app) => {
     router.post('/users/:userId/availability', availabilityController.addAvailability);
     router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
     router.put('/users/:userId/availability', availabilityController.replaceAvailability);
+
   
     return app.use('/api/v1/', router)
 }
