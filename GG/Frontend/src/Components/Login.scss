@@ -55,24 +55,75 @@ $dark-color: #364659;
       .login-input {
         margin-bottom: 15px;
 
+        /* label above each field */
         label {
           display: block;
           margin-bottom: 5px;
           font-size: 14px;
           color: $dark-color;
+          font-family: inherit;   // ← same font as the page
         }
 
+        /* base input styling (email, etc.) */
         input {
           width: 100%;
           padding: 10px;
           border: 1px solid $input-border-color;
           border-radius: 5px;
           font-size: 14px;
+          font-family: inherit;   // ← match fonts
 
           &:focus {
             border-color: darken($input-border-color, 10%);
             outline: none;
           }
+        }
+
+        input::placeholder {
+          font-family: inherit;
+          font-style: normal;     // remove italic look
+          color: #9aa3ad;         // subtle, optional
+        }
+
+        /* wrapper ONLY for the password input row */
+        .password-field {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        /* add room on the right for the eye button (password only) */
+        .password-field input {
+          padding-right: 2.25rem;   // space for the toggle button
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .toggle-password-btn {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: transparent !important;
+          border: 0 !important;
+          box-shadow: none !important;
+          padding: 0;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: $dark-color;
+          font-family: inherit;
+        }
+
+        .toggle-password-btn svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .toggle-password-btn:focus {
+          outline: 2px solid #5b9dd9;
+          outline-offset: 2px;
         }
       }
 
