@@ -290,6 +290,44 @@ let getFriendsList = async (req, res) => {
   }
 };
 
+let removeFriend = async (req, res) => {
+  const { userId, friendId } = req.body;
+  if (!userId || !friendId) {
+    return res.status(400).json({ message: 'Missing userId or friendId' });
+  }
+
+  try {
+    // Get current list
+    const [rows] = await pool.execute(
+      'SELECT friends_list FROM UserProfile WHERE id = ?',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let list = rows[0].friends_list;
+    list = Array.isArray(list)
+      ? list
+      : list
+        ? (typeof list === 'string' ? JSON.parse(list) : list)
+        : [];
+
+    const updated = list.filter(id => id != friendId);
+
+    await pool.execute(
+      'UPDATE UserProfile SET friends_list = CAST(? AS JSON) WHERE id = ?',
+      [JSON.stringify(updated), userId]
+    );
+
+    return res.status(200).json({ message: 'Friend removed successfully', friendsList: updated });
+  } catch (error) {
+    console.error('Error removing friend:', error);
+    return res.status(500).json({ message: 'Error removing friend', error: error.message });
+  }
+};
+
 module.exports = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList // added getUserNames as an export
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend // added getUserNames as an export
 }
