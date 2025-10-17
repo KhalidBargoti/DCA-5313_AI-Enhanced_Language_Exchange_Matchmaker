@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiUserPlus } from 'react-icons/fi';
 import { DateTime } from "luxon";  
+import Select from "react-select";
 
 import {
   handleGetUserNamesApi,
@@ -457,44 +458,64 @@ const FriendSearch = () => {
   };
 
   const MBTI_OPTIONS = [
-  'INTJ','INTP','ENTJ','ENTP',
-  'INFJ','INFP','ENFJ','ENFP',
-  'ISTJ','ISFJ','ESTJ','ESFJ',
-  'ISTP','ISFP','ESTP','ESFP'
+    'INTJ','INTP','ENTJ','ENTP',
+    'INFJ','INFP','ENFJ','ENFP',
+    'ISTJ','ISFJ','ESTJ','ESFJ',
+    'ISTP','ISFP','ESTP','ESFP'
   ];
-
   const ZODIAC_OPTIONS = [
     'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
     'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
   ];
 
-  // Convert <select multiple> event to an array of values
-  const toValues = (e) => Array.from(e.target.selectedOptions).map(o => o.value);
+  // Convert to {value,label} for react-select
+  const MBTI_OPTIONS_OPT   = MBTI_OPTIONS.map(v => ({ value: v, label: v }));
+  const ZODIAC_OPTIONS_OPT = ZODIAC_OPTIONS.map(v => ({ value: v, label: v }));
 
-  // Apply MBTI/Zodiac filters (and respect the Name textbox)
+  // Make react-select fill width and match your palette
+  const customSelectStyles = {
+    container: (base) => ({ ...base, width: '100%' }),
+    control:   (base, state) => ({
+      ...base,
+      minHeight: 42,
+      borderRadius: 6,
+      borderColor: state.isFocused ? '#6344A6' : '#ccc',
+      boxShadow: 'none',
+      '&:hover': { borderColor: '#6344A6' }
+    }),
+    multiValue:       (base) => ({ ...base, background: '#ede7f6' }),
+    multiValueLabel:  (base) => ({ ...base, color: '#6344A6' }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: '#6344A6',
+      ':hover': { background: '#6344A6', color: '#fff' }
+    }),
+    menu: (base) => ({ ...base, zIndex: 5 }) // ensure it overlays
+  };
+
   const applyPersonalityFilters = () => {
     let base = allUserNames;
 
-    // Name/email filter (re-use your name textbox)
-    const nameNeedle = (filterInput || '').trim().toLowerCase();
-    if (nameNeedle) {
-      base = base.filter(user =>
-        (user.firstName || '').toLowerCase().includes(nameNeedle) ||
-        (user.lastName  || '').toLowerCase().includes(nameNeedle) ||
-        (user.email     || '').toLowerCase().includes(nameNeedle)
+    // Name/email filter
+    const q = (filterInput || '').trim().toLowerCase();
+    if (q) {
+      base = base.filter(u =>
+        (u.firstName || '').toLowerCase().includes(q) ||
+        (u.lastName  || '').toLowerCase().includes(q) ||
+        (u.email     || '').toLowerCase().includes(q)
       );
     }
 
-    // MBTI (case-insensitive; allow multiple)
+    // MBTI (multi, case-insensitive)
     if (selectedMbti.length) {
-      const setMbti = new Set(selectedMbti.map(v => v.toUpperCase()));
-      base = base.filter(u => setMbti.has(String(u.mbti || '').toUpperCase()));
+      const mbtiSet = new Set(selectedMbti.map(v => v.toUpperCase()));
+      base = base.filter(u => mbtiSet.has(String(u.mbti || '').toUpperCase()));
     }
 
-    // Zodiac (case-insensitive; allow multiple)
+    // Zodiac (multi, case-insensitive)
     if (selectedZodiac.length) {
-      const setZ = new Set(selectedZodiac.map(v => v.toLowerCase()));
-      base = base.filter(u => setZ.has(String(u.zodiac || '').toLowerCase()));
+      const zSet = new Set(selectedZodiac.map(v => v.toLowerCase()));
+      base = base.filter(u => zSet.has(String(u.zodiac || '').toLowerCase()));
     }
 
     setUserNames(base);
@@ -526,33 +547,33 @@ const FriendSearch = () => {
         <div className="filter-section">
           <h3>Filter Users by MBTI & Zodiac</h3>
 
-          <label className="filter-label">MBTI (multi-select)</label>
-          <select
-            multiple
-            size={6}
-            value={selectedMbti}
-            onChange={(e) => setSelectedMbti(toValues(e))}
-            className="filter-multiselect"
-          >
-            {MBTI_OPTIONS.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+          <div className="two-col">
+            <div>
+              <label className="filter-label">MBTI (multi-select)</label>
+              <Select
+                isMulti
+                options={MBTI_OPTIONS_OPT}
+                value={MBTI_OPTIONS_OPT.filter(o => selectedMbti.includes(o.value))}
+                onChange={(vals) => setSelectedMbti((vals || []).map(v => v.value))}
+                placeholder="Select MBTI types…"
+                styles={customSelectStyles}
+              />
+            </div>
 
-          <label className="filter-label" style={{ marginTop: 10 }}>Zodiac (multi-select)</label>
-          <select
-            multiple
-            size={6}
-            value={selectedZodiac}
-            onChange={(e) => setSelectedZodiac(toValues(e))}
-            className="filter-multiselect"
-          >
-            {ZODIAC_OPTIONS.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+            <div>
+              <label className="filter-label">Zodiac (multi-select)</label>
+              <Select
+                isMulti
+                options={ZODIAC_OPTIONS_OPT}
+                value={ZODIAC_OPTIONS_OPT.filter(o => selectedZodiac.includes(o.value))}
+                onChange={(vals) => setSelectedZodiac((vals || []).map(v => v.value))}
+                placeholder="Select zodiac signs…"
+                styles={customSelectStyles}
+              />
+            </div>
+          </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <div className="btn-row spread">
             <button className="filter-btn" onClick={applyPersonalityFilters}>
               Apply Filters
             </button>
@@ -560,8 +581,6 @@ const FriendSearch = () => {
               Clear
             </button>
           </div>
-
-          <small>Tip: Hold <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> or <kbd>Shift</kbd> to select multiple.</small>
         </div>
 
         <div className="filter-section">
