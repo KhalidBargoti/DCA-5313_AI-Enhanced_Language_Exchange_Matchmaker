@@ -1,6 +1,13 @@
 import { pool } from '../config/connectDB'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 
+const normalizePair = (a, b) => {
+  a = Number(a); b = Number(b);
+  if (!a || !b) throw new Error('Missing user ids');
+  if (a === b) throw new Error('Cannot friend yourself');
+  return a < b ? [a, b] : [b, a];
+};
+
 //TOWNSHEND: getAllUsers may be the best way to sort users on a page since all data on a UserAccount is attached to the user
 // I can explore this more
 let getAllUsers = async (req, res) => {
@@ -86,32 +93,25 @@ const getUserNames = async (req, res) => {
     }
 };
 let addFriend = async (req, res) => {
-  const { user_id_2, user_2_first_name, user_2_last_name } = req.body;
-
-  // Validate that all necessary parameters are provided
-  if (!user_id_2 || !user_2_first_name || !user_2_last_name) {
-      return res.status(400).json({
-          message: 'Missing parameters'
-      });
-  }
-
   try {
-      // Assuming you have an `id` auto-incremented field in your FriendsList table, and that user_id_1 is no longer required
-      const [result] = await pool.execute(
-          'INSERT INTO FriendsList (user_id_2, user_2_first_name, user_2_last_name) VALUES (?, ?, ?)',
-          [user_id_2, user_2_first_name, user_2_last_name]
-      );
-      
-      res.status(201).json({
-          message: 'Friend added successfully',
-          data: result
-      });
+    const { userId, targetId } = req.body;
+    const normalizePair = (a,b) => { a=+a; b=+b; if(!a||!b) throw new Error('Missing user ids'); if(a===b) throw new Error('Cannot friend yourself'); return a<b?[a,b]:[b,a]; };
+    const [u1, u2] = normalizePair(userId, targetId);
+
+    const [result] = await pool.execute(
+      `INSERT INTO Friendship (user_id_1, user_id_2, status)
+       VALUES (?, ?, 'accepted')
+       ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP`,
+      [u1, u2]
+    );
+
+    return res.status(201).json({
+      message: 'Friend added successfully',
+      sql: { affectedRows: result.affectedRows, insertId: result.insertId }
+    });
   } catch (error) {
-      console.error('Error adding friend:', error);
-      res.status(500).json({
-          message: 'Error adding friend',
-          error: error.message
-      });
+    console.error('[addFriend] error:', error);
+    return res.status(400).json({ message: error?.message || 'Error adding friend' });
   }
 };
 
@@ -247,38 +247,57 @@ let addToFriendsList = async (req, res) => {
 };
 
 let getFriendsList = async (req, res) => {
-    const { id: userId } = req.query;
+  const userId = Number(req.params.id);
+  const details = req.query.details === '1' || req.query.details === 'true';
+  if (!userId) return res.status(400).json({ message: 'Missing user ID' });
 
-    if (!userId) {
-        return res.status(400).json({
-            message: 'Missing user ID',
-        });
+  try {
+    if (details) {
+      const [rows] = await pool.execute(
+        `SELECT u.id, u.firstName, u.lastName, u.email
+           FROM Friendship f
+           JOIN UserProfile u
+             ON u.id = CASE WHEN f.user_id_1 = ? THEN f.user_id_2 ELSE f.user_id_1 END
+          WHERE (f.user_id_1 = ? OR f.user_id_2 = ?) AND f.status = 'accepted'
+          ORDER BY u.firstName, u.lastName`,
+        [userId, userId, userId]
+      );
+      return res.status(200).json({ message: 'ok', friends: rows });
+    } else {
+      const [rows] = await pool.execute(
+        `SELECT CASE WHEN user_id_1=? THEN user_id_2 ELSE user_id_1 END AS friend_id
+           FROM Friendship
+          WHERE (user_id_1=? OR user_id_2=?) AND status='accepted'`,
+        [userId, userId, userId]
+      );
+      return res.status(200).json({ message: 'ok', friends: rows.map(r => r.friend_id) });
     }
+  } catch (error) {
+    console.error('[getFriendsList] error:', error);
+    return res.status(500).json({ message: 'Error fetching friends list' });
+  }
+};
 
-    try {
-        const [rows] = await pool.execute(
-            'SELECT friends_list FROM UserProfile WHERE id = ?',
-            [userId]
-        );
+let findFriends = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Missing user id' });
 
-        if (rows.length > 0) {
-            const friendsList = rows[0].friends_list
-                ? rows[0].friends_list.split(', ')
-                : [];
-            return res.status(200).json({ friendsList });
-        } else {
-            return res.status(404).json({
-                message: 'User not found',
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching friends list:', error);
-        return res.status(500).json({
-            message: 'Error fetching friends list',
-        });
-    }
+    const [rows] = await pool.execute(
+      `SELECT CASE WHEN user_id_1 = ? THEN user_id_2 ELSE user_id_1 END AS friend_id
+         FROM Friendship
+        WHERE (user_id_1 = ? OR user_id_2 = ?) AND status = 'accepted'`,
+      [id, id, id]
+    );
+
+    const friendIds = rows.map(r => r.friend_id);
+    return res.status(200).json({ message: 'ok', friends: friendIds });
+  } catch (error) {
+    console.error('Error finding friends:', error);
+    return res.status(500).json({ message: 'Failed to fetch friends' });
+  }
 };
 
 module.exports = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList // added getUserNames as an export
+    addFriend, findFriends, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList // added getUserNames as an export
 }

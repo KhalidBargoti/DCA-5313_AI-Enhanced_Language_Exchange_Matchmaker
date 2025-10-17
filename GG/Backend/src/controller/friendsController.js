@@ -11,20 +11,21 @@ let createFriends = async (req, res) => {
 }
 
 
-// TOWNSHEND: several of these console.logs were in infinite loops; didn't have time to trace them down so I commented them out.
-// that's the only update to this file
 let findFriends = async (req, res) => {
-    //let user1_ID = req.params.user1_ID
-    //console.log("iddd" + req.body.id)
-    let user1_ID = req.body.id
-    //console.log("check friends for userID >>>>", user1_ID)
-    let messageData = await friendsService.handleFindFriends(user1_ID)
-    //console.log(messageData.data)
+  try {
+    const userId = req.params.id;            // <-- key change
+    if (!userId) return res.status(400).json({ message: 'Missing user id' });
+
+    const result = await friendsService.handleFindFriends(userId);
     return res.status(200).json({
-        message: messageData.errMessage,
-        chatsData: messageData.data? messageData.data : {}
-    })
-}
+      message: result.errMessage,
+      chatsData: result.data ?? []
+    });
+  } catch (err) {
+    console.error('findFriends error:', err);
+    return res.status(500).json({ message: 'Failed to fetch friends' });
+  }
+};
 
 let findFriend = async (req, res) => {
     let user1_ID = req.params.user1_ID
@@ -38,22 +39,14 @@ let findFriend = async (req, res) => {
     })
 }
 let addFriend = async (req, res) => {
-    const { user_id_1, user_1_first_name, user_1_last_name, user_id_2, user_2_first_name, user_2_last_name } = req.body;
-    console.log("Received addFriend request with data:", req.body);
-    try {
-        const response = await friendsService.createFriend(
-            user_id_1,
-            user_1_first_name,
-            user_1_last_name,
-            user_id_2,
-            user_2_first_name,
-            user_2_last_name
-        );
-        res.status(200).json({ message: 'Friend added successfully', data: response });
-    } catch (error) {
-        console.error('Error adding friend:', error);
-        res.status(500).json({ message: 'Error adding friend', error });
-    }
+  try {
+    const { userId, targetId } = req.body;
+    const response = await friendsService.createFriend(userId, null, null, targetId, null, null);
+    return res.status(201).json({ message: 'Friend added successfully', data: response });
+  } catch (error) {
+    console.error('Error adding friend:', error);
+    return res.status(500).json({ message: 'Error adding friend' });
+  }
 };
 
 module.exports = {

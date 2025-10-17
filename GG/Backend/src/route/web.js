@@ -23,9 +23,7 @@ let initWebRoute = (app) => {
     router.post('/Translator', userController.handleTranslator)
     router.post('/CreateProfile', userController.handleProfileCreation)
     router.post('/Dashboard', dashBoardController.handleDashBoard)
-    router.post('/findFriends', friendsController.findFriends)
     router.post('/createFriends/:id1/:id2', friendsController.createFriends)
-    router.post('/api/addFriend', friendsController.addFriend);
 
 
     router.get('/api/findMatch/:userId/:userNative/:userTarget', matchingController.handleMatchingFriends)

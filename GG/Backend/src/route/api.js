@@ -1,10 +1,9 @@
 import express from "express";
-import APIController from "../controller/APIController";
-import interestController from "../controller/interestController";
-import userInterestController from "../controller/userInterestController";
-import availabilityController from "../controller/availabilityController";
-
-let router = express.Router();
+import * as APIController from "../controller/APIController.js";
+import * as interestController from "../controller/interestController.js";
+import * as userInterestController from "../controller/userInterestController.js";
+import * as availabilityController from "../controller/availabilityController.js";
+const router = express.Router();
 
 //TOWNSHEND: added an additional router to get user names
 const initAPIRoute = (app) => { 
@@ -20,8 +19,8 @@ const initAPIRoute = (app) => {
     router.post('/update-proficiency', APIController.updateProficiency);
     router.post('/add-comment', APIController.addComment);
     router.get('/getUserProficiencyAndRating/:userId', APIController.getUserProficiencyAndRating);
-    router.post('/addToFriendsList', APIController.addToFriendsList);
-    router.get('/getFriendsList', APIController.getFriendsList);
+    router.post('/friends', APIController.addFriend);
+    router.get('/users/:id/friends', APIController.getFriendsList);
 
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);

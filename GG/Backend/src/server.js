@@ -10,6 +10,13 @@ const app = express();
 app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
 const port = process.env.PORT || 8080;
 
+process.on('uncaughtException', err => {
+  console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', err => {
+  console.error('Unhandled Rejection:', err);
+});
+
 //Take data from users
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
