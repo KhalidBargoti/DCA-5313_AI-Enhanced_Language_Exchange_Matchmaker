@@ -200,7 +200,7 @@ function Dashboard()  {
 
       <div className="dashboard-right">
       <button className="btn-action" onClick={() => navigate({
-                pathname: "/CreateProfile",
+                pathname: "/UpdateProfile",
                 search: createSearchParams({ id: id }).toString()
               })}>
               Set Profile

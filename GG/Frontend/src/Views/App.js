@@ -7,6 +7,7 @@ import Registration from "../Components/Registration";
 import Login from '../Components/Login';
 import React, { Component }  from 'react';
 import CreateProfile from '../Components/CreateProfile';
+import UpdateProfile from '../Components/UpdateProfile';
 import Dashboard from '../Components/Dashboard';
 import LogoutConfirmationPage from '../Components/LogoutConfirmationPage';
 import Chat from '../Components/Chat';
@@ -34,6 +35,7 @@ const App = () => {
           <Route path ="/Login" element ={<Login/>}/>
           <Route path ="/Register" element ={<Registration />}/>
           <Route path ="/CreateProfile" element ={<CreateProfile />}/>
+          <Route path ="/UpdateProfile" element ={<UpdateProfile />}/>
           <Route path ="/Dashboard" element ={<Dashboard />}/>
           <Route path ="/FriendSearch" element ={<FriendSearch />}/>
           <Route path ="/Translator" element = {<Translator />}/>

@@ -75,6 +75,29 @@ let handleProfileCreation = async (req, res) => {
     })
 }
 
+let handleProfileUpdate = async (req, res) => {
+    console.log("updating profile")
+    let native_language = req.body.native_language;
+    let target_language = req.body.target_language;
+    let target_language_proficiency = req.body.target_language_proficiency;
+    let age = req.body.age;
+    let gender = req.body.gender;
+    let profession = req.body.profession;
+    let mbti = req.body.mbti;
+    let zodiac = req.body.zodiac;
+    let default_time_zone = req.body.default_time_zone;
+    let visibility = req.body.visibility;
+    let id = req.body.id;
+    // Call handleProfileUpdate
+    let userData = await userService.handleProfileUpdate(id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility)
+    console.log(`Updated user ${id} with the following values: `,userData)
+    return res.status(200).json({
+         errorCode: userData.errCode,
+         message: userData.errMessage,
+         user: userData.user? userData.user : {}
+    })
+}
+
 let handleDataPopulation = async (req, res) => {
     let languages = ["English", "Korean"];
     let genders = ["Male", "Female", "Other"];
@@ -157,6 +180,7 @@ module.exports = {
     handleLogin: handleLogin,
     handleRegister: handleRegister,
     handleProfileCreation: handleProfileCreation,
+    handleProfileUpdate: handleProfileUpdate,
     handleGetUser : handleGetUser,
     handleTranslator : handleTranslator,
     handleGetProfile : handleGetProfile,
