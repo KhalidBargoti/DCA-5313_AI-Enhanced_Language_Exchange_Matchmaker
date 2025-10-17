@@ -7,7 +7,7 @@ import Select from "react-select";
 
 import Button from 'react-bootstrap/Button';
 
-import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest } from '../Services/userService';
+import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest, handleAddUserAvailability } from '../Services/userService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
 
@@ -24,6 +24,7 @@ function CreateProfile() {
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [defaultTimeZone, setDefaultTimeZone] = useState('');
+  const [availability, setAvailability] = useState([]);
   const [visibility, setVisibility] = useState('');
   const [errMsg ,setErrMsg] = useState('');
   
@@ -115,31 +116,31 @@ function CreateProfile() {
   { value: "Hide", label: "Hide" },
  ];
 
-const DatesAvailable = [
-  { value: "Sunday", label: "Sunday" },
-  { value: "Monday", label: "Monday" },
-  { value: "Tuesday", label: "Tuesday" },
-  { value: "Wednesday", label: "Wednesday" },
-  { value: "Thursday", label: "Thursday" },
-  { value: "Friday", label: "Friday" },
-  { value: "Saturday", label: "Saturday" },
-];
+ const generateHourlySlots = (day) => {
+  const slots = [];
+  for (let hour = 8; hour < 21; hour++) {
+    const start = String(hour).padStart(2, '0') + ':00';
+    const end = String(hour + 1).padStart(2, '0') + ':00';
 
-const TimesAvailable = [
-  { value: "08:00", label: "8AM-9AM" },
-  { value: "09:00", label: "9AM-10AM" },
-  { value: "10:00", label: "10AM-11AM" },
-  { value: "11:00", label: "11AM-12PM" },
-  { value: "12:00", label: "12PM-1PM" },
-  { value: "13:00", label: "1PM-2PM" },
-  { value: "14:00", label: "2PM-3PM" },
-  { value: "15:00", label: "3PM-4PM" },
-  { value: "16:00", label: "4PM-5PM" },
-  { value: "17:00", label: "5PM-6PM" },
-  { value: "18:00", label: "6PM-7PM" },
-  { value: "19:00", label: "7PM-8PM" },
-  { value: "20:00", label: "8PM-9PM"},
-];
+    const formatHour = (h) => {
+      const suffix = h >= 12 ? 'pm' : 'am';
+      const display = ((h + 11) % 12 + 1); // convert 13 -> 1, 0 -> 12, etc
+      return `${display}${suffix}`;
+    };
+
+    const label = `${day} ${formatHour(hour)}-${formatHour(hour + 1)}`;
+
+    slots.push({
+      value: { day_of_week: day, start_time: start, end_time: end },
+      label,
+    });
+  }
+  return slots;
+};
+
+const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const availabilityOptions = days.flatMap(generateHourlySlots);
 
 useEffect(() => {
   const fetchInterests = async () => {
@@ -196,6 +197,10 @@ useEffect(() => {
   setDefaultTimeZone(selectedOption.value)
  };
 
+ const handleAvailability = (selectedOptions) => {
+  setAvailability(selectedOptions || []);
+ }
+
  const handleVisibility = (selectedOption) => {
   setVisibility(selectedOption.value)
  };
@@ -232,6 +237,17 @@ const [search] = useSearchParams();
           console.log("All user interests added!");
         } catch (error) {
           console.error("Failed to add user interests:", error);
+        }
+      }
+
+      // add user availability
+      if (availability.length > 0) {
+        const slots = availability.map(a => a.value);
+        try {
+          await handleAddUserAvailability(id, slots);
+          console.log("All user availabilities added!");
+        } catch (error) {
+          console.error("Failed to add user availability:", error);
         }
       }
 
@@ -371,6 +387,14 @@ const [search] = useSearchParams();
         <div className='form-group'>
         <label className="label">Default Time Zone</label>
         <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
+        </div>
+
+        <div className='form-group'>
+          <label className="label">Availability</label>
+          <Select isMulti
+            options={availabilityOptions}
+            value={availability}
+            onChange={handleAvailability}/>
         </div>
 
         <div className='form-group'>

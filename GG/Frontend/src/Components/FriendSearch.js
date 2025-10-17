@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiUserPlus } from 'react-icons/fi';
+import { DateTime } from "luxon";  
 import Select from "react-select";
 
 import {
@@ -14,7 +15,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList } from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -48,38 +49,52 @@ const FriendSearch = () => {
     }
 
     console.log('Filtering users by availability:', selectedAvailability);
-    
-    // TODO: call the backend API with availability data
-    const filteredUsers = allUserNames.filter((user) => {
-      // returns all users atm
-      // TODO: implement the actual availability matching logic
-      return true;
-    });
+    try {
+      // Normalize selected availability to UTC
+      const selectedSlotsUTC = selectedAvailability.map(slot => {
+        const convertTo24Hr = (timeStr) => {
+          const dt = DateTime.fromFormat(timeStr.trim(), "h a", { zone: currentUser?.default_time_zone || "UTC" });
+          return dt.isValid ? dt.toFormat("HH:mm") : null;
+        };
+        
+        const start = convertTo24Hr(slot.time);
+        const end = DateTime.fromFormat(start, "HH:mm").plus({ hours: 1 }).toFormat("HH:mm"); // assume 1-hour slot
+        return {
+          day_of_week: slot.day,
+          start_utc: DateTime.fromISO(`2024-01-01T${start}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+          end_utc: DateTime.fromISO(`2024-01-01T${end}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+        };
+      });
+      // Filter all users
+      const filteredUsers = allUserNames.filter(user => {
+        if (!Array.isArray(user.Availability) || user.Availability.length === 0)
+          return false;
 
-    setUserNames(filteredUsers);
-    setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+        const userZone = user.default_time_zone || "UTC";
+        return user.Availability.some(userSlot => {
+          const userStartUTC = DateTime.fromISO(`2024-01-01T${userSlot.start_time}`, { zone: userZone }).toUTC();
+          const userEndUTC = DateTime.fromISO(`2024-01-01T${userSlot.end_time}`, { zone: userZone }).toUTC();
+
+          return selectedSlotsUTC.some(selSlot =>
+            userSlot.day_of_week === selSlot.day_of_week &&
+            userStartUTC.toISO() === selSlot.start_utc.toISO() &&
+            userEndUTC.toISO() === selSlot.end_utc.toISO()
+          );
+        });
+      });
+      setUserNames(filteredUsers);
+      setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error("Error filtering by availability:", error);
+      setSuccessMessage("Error applying availability filter");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    }
   };
 
   useEffect(() => {
-    // Get time slot data from AvailabilityPicker
-    const availabilityParam = search.get('availability');
-    if (availabilityParam) {
-      try {
-        const availabilityData = JSON.parse(availabilityParam);
-        setSelectedAvailability(availabilityData);
-        console.log('Received availability data:', availabilityData);
-        
-        setTimeout(() => {
-          handleAvailabilityFilter();
-        }, 100);
-      } catch (error) {
-        console.error('Error parsing availability data:', error);
-      }
-    }
-    
     const fetchUserData = async () => {
       try {
         console.log(
@@ -90,70 +105,91 @@ const FriendSearch = () => {
         const profilesResponse = await handleGetUserPreferencesApi();
 
         // Merge user data with their profiles
-        const mergedUsers = userResponse.data.map((user) => {
-          const userProfile = profilesResponse.data.find(
-            (profile) => profile.id === user.id
-          );
-          const mergedUser = {
-            ...user,
-            ...userProfile, // Spread profile data into user object
-            score: null, // Initialize compatibility score
-          };
-          console.log('Merged User:', mergedUser); // Debugging Line
-          return mergedUser;
-        });
-
-        const visibleUsers = mergedUsers.filter(
-          (user) => user.visibility === 'Show'
+        const mergedUsers = await Promise.all(
+          userResponse.data.map(async (user) => {
+            const userProfile = profilesResponse.data.find(
+              (profile) => profile.id === user.id
+            );
+        
+            // Fetch current user's interests
+            let userInterests = [];
+            try {
+              const interestsResponse = await handleGetUserInterests(user.id);
+              userInterests = interestsResponse || [];
+              console.log(`User interests received for user ${user.id}:`, userInterests);
+            } catch (err) {
+              console.error(`Error fetching interests for user ${user.id}:`, err);
+            }
+            // Fetch current user's availability
+            let userAvailability = [];
+            try {
+              const availabilityResponse = await handleGetUserAvailability(user.id);
+              userAvailability = availabilityResponse || [];
+              console.log(`User availability received for user ${user.id}:`, userAvailability);
+            } catch (err) {
+              console.error(`Error fetching availability for user ${user.id}:`, err);
+            }
+        
+            return {
+              ...user,
+              ...userProfile,
+              Interests: userInterests,
+              Availability: userAvailability,
+              score: null,
+            };
+          })
         );
+
+        // Step 3: Filter visible users
+        const visibleUsers = mergedUsers.filter((user) => user.visibility === 'Show');
 
         console.log('Visible users:', visibleUsers);
 
         setUserNames(visibleUsers);
         setAllUserNames(visibleUsers);
 
-        // Retrieve stored current user data from userData.js
+        // Step 4: Get current user info
         const currentUserData = getUserData();
         setCurrentUser(currentUserData);
 
-        console.log('Fetched user names:', userResponse.data);
-        console.log('Retrieved current user data:', currentUserData);
-        console.log('current user id:', id);
-
-        // Fetch friends list for the current user
-        try {
-          console.log('Fetching friends list for user ID:', id);
-      
-          const friendsResponse = await handleGetFriendsList(id);
-          console.log('Full friendsResponse:', friendsResponse);
-      
-          // Safely access friendsList
-          const friendsList = friendsResponse?.data?.friendsList;
-      
-          if (Array.isArray(friendsList)) {
-              setUserList(friendsList.join(', ')); // Convert the list to a string
-              console.log(userList);
-          } else {
-              console.error('Unexpected friendsList type:', friendsList);
-              setUserList(''); // Reset to empty string on unexpected structure
-          }
-        } catch (friendsError) {
-            console.error('Error fetching friends list:', friendsError);
-            setUserList(''); // Reset to empty string on fetch error
-        }
-      
+        const currentUserId = currentUserData?.id || id; // fallback
+        console.log('Current user ID (resolved):', currentUserId);
 
 
         setLoading(false);
       } catch (err) {
-        setError(err);
         console.error('Error in fetchUserData:', err);
+        setError(err);
         setLoading(false);
       }
     };
+
     fetchUserData();
   }, [id]);
 
+  useEffect(() => {
+    const availabilityParam = search.get('availability');
+    if (availabilityParam) {
+      try {
+        const availabilityData = JSON.parse(availabilityParam);
+        console.log('Received availability data from URL:', availabilityData);
+        setSelectedAvailability(availabilityData);
+      } catch (error) {
+        console.error('Error parsing availability data:', error);
+      }
+    }
+  }, [search]);
+
+  useEffect(() => {
+    if (
+      selectedAvailability &&
+      selectedAvailability.length > 0 &&
+      allUserNames.length > 0
+    ) {
+      console.log("Auto-applying availability filter...");
+      handleAvailabilityFilter();
+    }
+  }, [selectedAvailability, allUserNames]);
 
   const handleQuickAddFriend = async (user) => {
     try {
@@ -602,6 +638,7 @@ const FriendSearch = () => {
               <th>Native Language</th>
               <th>Target Language</th>
               <th>Compatibility Score</th>
+              <th>Availability</th>
               {/* ➕ Add-Friend column */}
               <th>Actions</th>
             </tr>
@@ -628,6 +665,7 @@ const FriendSearch = () => {
                 <td>{getField(user, ["nativeLanguage", "native_language"])}</td>
                 <td>{getField(user, ["targetLanguage", "target_language"])}</td>
                 <td>{user.score !== null ? user.score : "N/A"}</td>
+                <td>{Array.isArray(user.Availability) ? user.Availability.map(a => `${a.day_of_week} ${a.start_time}`).join(', '): ''}</td>
 
                 {/* ➕ Add-Friend button cell */}
                 <td>

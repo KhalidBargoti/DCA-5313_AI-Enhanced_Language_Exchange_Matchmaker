@@ -5,10 +5,11 @@ let getUserInterests = (user_id) => {
         try {
             const user = await db.UserProfile.findOne({
                 where: { id: user_id },
-                include: [{ model: db.Interest, through: { attributes: [] } }]
+                include: [{ model: db.Interest, as: 'Interests', through: { attributes: [] } }]
             });
             resolve(user ? user.Interests : []);
         } catch (e) {
+            console.error('Error in getUserInterests service:', e);
             reject(e);
         }
     })
