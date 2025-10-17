@@ -72,13 +72,13 @@
 }
 
 .btn-action {
-  width: 200px; /* Square button dimensions */
-  height: 200px;
+  width: 350px; /* Square button dimensions */
+  height: 350px;
   border-radius: 15px; /* Slightly rounded corners */
   border: none;
   color: white;
   background-color: #6344A6; /* Solid purple */
-  font-size: 20px; /* Adjust text size */
+  font-size: 40px; /* Adjust text size */
   text-align: center;
   cursor: pointer;
   display: flex; /* Center text inside the button */
