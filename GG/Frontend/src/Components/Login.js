@@ -2,11 +2,13 @@ import { useState } from 'react';
 import './Login.scss';
 import {handleLoginApi} from '../Services/userService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 function Login (){
     let data;
      const [username, setUsername] = useState('');
      const [password, setPassword] = useState('');
+     const [showPassword, setShowPassword] = useState(false);
      const navigate = useNavigate();
      const [errMsg ,setErrMsg] = useState('');
 
@@ -83,15 +85,32 @@ function Login (){
                   value={username}
                   onChange={handleOnChangeUserInput}
                 />
-              </div>
-              <div className="login-input">
-                <label>Password:</label>
-                <input
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={handleOnChangePassword}
-                />
-              </div>
+                </div>
+                <div className="login-input">
+                  <label htmlFor="password" className="field-label">Password:</label>
+
+                  <div className="password-field">
+                    <input
+                      id="password"
+                      name="password"
+                      className="field-input"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={handleOnChangePassword}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      className="toggle-password-btn"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((s) => !s)}
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
+                </div>
               <div className="error-message">{errMsg}</div>
               <button className="btn-login" onClick={handleOnClick}>
                 Login
