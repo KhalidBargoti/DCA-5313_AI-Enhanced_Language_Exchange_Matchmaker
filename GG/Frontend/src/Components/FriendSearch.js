@@ -13,7 +13,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList } from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests} from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -33,7 +33,8 @@ const FriendSearch = () => {
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
   const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
   const [interestsQuery, setInterestsQuery] = useState('');
-  const [interestsFilterInput, setInterestsFilterInput] = useState('');
+  const [allInterests, setAllInterests] = useState([]);
+  const [selectedInterests, setSelectedInterests] = useState([]);
 
   const handleAvailabilityFilter = () => {
     if (!selectedAvailability || selectedAvailability.length === 0) {
@@ -150,6 +151,24 @@ const FriendSearch = () => {
       }
     };
     fetchUserData();
+
+    // Fetch Interests list from DB (same source as CreateProfile.js)
+    const fetchInterests = async () => {
+      try {
+        const res = await handleGetAllInterests();
+        const raw = res?.data ?? res;
+        const names = Array.isArray(raw)
+          ? raw.map(i => i?.interest_name ?? i?.name ?? i).filter(Boolean)
+          : [];
+        const uniqueSorted = Array.from(new Set(names)).sort((a,b) => a.localeCompare(b));
+        setAllInterests(uniqueSorted);
+      } catch (e) {
+        console.error('Failed to fetch interests:', e);
+        setAllInterests([]);
+      }
+    };
+    fetchInterests();
+    
   }, [id]);
 
 
@@ -422,10 +441,12 @@ const FriendSearch = () => {
     const q = (interestsQuery || '').trim().toLowerCase();
     if (!q) return true; // no committed query -> include all
 
-    const fields = [u.interests, u.interest, u.hobby]
-      .filter((v) => v != null)
-      .flatMap((v) => (Array.isArray(v) ? v : [v]))
-      .map((v) => String(v).toLowerCase());
+    const fields = [
+      u.interests,
+      u.interest,
+      u.hobby,
+      Array.isArray(u.Interests) ? u.Interests.map(i => i?.interest_name) : undefined
+    ]
 
     const terms = q.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean);
     if (!terms.length) return true;
@@ -464,30 +485,35 @@ const FriendSearch = () => {
 
         <div className="filter-section">
           <h3>Filter Users by Interest(s)</h3>
-          <input
-            type="text"
-            placeholder="e.g., hiking, photography"
-            value={interestsFilterInput}
-            onChange={(e) => setInterestsFilterInput(e.target.value)}
-          />
-          <small>Tip: separate multiple with commas or spaces.</small>
-          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+          <label className="filter-label">Select one or more</label>
+          <select
+            multiple
+            size={6}
+            value={selectedInterests}
+            onChange={(e) =>
+              setSelectedInterests(Array.from(e.target.selectedOptions, o => o.value))
+            }
+            className="filter-multiselect"
+          >
+            {allInterests.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
             <button
               className="filter-btn"
-              onClick={() => setInterestsQuery(interestsFilterInput)}
+              onClick={() => setInterestsQuery(selectedInterests.join(','))}
             >
-              Filter by Interests
+              Apply Interests
             </button>
             <button
               className="filter-btn"
-              onClick={() => {
-                setInterestsFilterInput('');
-                setInterestsQuery('');
-              }}
+              onClick={() => { setSelectedInterests([]); setInterestsQuery(''); setUserNames(allUserNames); }}
             >
               Clear
             </button>
           </div>
+          <small>Tip: hold Ctrl/Cmd or Shift to select multiple.</small>
         </div>
 
         <div className="filter-section">
