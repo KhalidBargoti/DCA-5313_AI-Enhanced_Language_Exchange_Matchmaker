@@ -115,3 +115,63 @@
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Two-column layout for the MBTI/Zodiac selects */
+.filter-section .two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* Spread the Apply/Clear buttons left and right, equal widths */
+.filter-section .btn-row.spread {
+  display: flex;
+  justify-content: space-between; /* pushes them to opposite sides */
+  gap: 0;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.filter-section .btn-row.spread .filter-btn {
+  flex-basis: 48%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #6344A6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.filter-section .btn-row.spread .filter-btn:hover {
+  background-color: #4b3387;
+  transform: translateY(-2px);
+}
+
+/* Label aesthetics */
+.filter-label {
+  display: block;
+  font-weight: 600;
+  margin: 6px 0 6px;
+  color: #364659;
+}
+
+/* Mobile: stack the buttons */
+@media (max-width: 768px) {
+  .filter-section .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-section .btn-row.spread {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-section .btn-row.spread .filter-btn {
+    flex-basis: auto;
+    width: 100%;
+  }
+}

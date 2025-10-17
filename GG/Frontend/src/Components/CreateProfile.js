@@ -21,6 +21,7 @@ function CreateProfile() {
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [defaultTimeZone, setDefaultTimeZone] = useState('');
+  const [availability, setAvailability] = useState([]);
   const [visibility, setVisibility] = useState('');
   const [errMsg, setErrMsg] = useState('');
   
@@ -208,10 +209,20 @@ function CreateProfile() {
         console.log("All user interests added!");
       }
 
-      if (data && data.errCode !== 0) {
-        setError(true);
-        setErrMsg(data.message);
-        return;
+      // add user availability
+      if (availability.length > 0) {
+        const slots = availability.map(a => a.value);
+        try {
+          await handleAddUserAvailability(id, slots);
+          console.log("All user availabilities added!");
+        } catch (error) {
+          console.error("Failed to add user availability:", error);
+        }
+      }
+
+      if (data && data.errCode !== 0){
+          setSubmitted(true);
+          setErrMsg(data.message);
       }
       
       if (data && data.errCode === 0) {
@@ -363,8 +374,50 @@ function CreateProfile() {
             </button>
           </form>
         </div>
-        <div>
-          <button className="btn-back-02" onClick={handleBack}>Back</button>
+
+        <div className='form-group'>
+        <label className="label">Profession*</label>
+        <Select options={Profession} onChange={handleProfession}/>
+        </div>
+
+
+        <div className='form-group'>
+        <label className="label">Personality Type</label>
+        <Select options={MBTI} onChange={handleMBTI}/>
+        </div>
+
+        <div className='form-group'>
+        <label className="label">Zodiac</label>
+        <Select options={Zodiac} onChange={handleZodiac}/>
+        </div>
+
+        <div className='form-group'>
+        <label className="label">Interests</label>
+        <Select isMulti
+          options={allInterests}
+          onChange={handleInterestsChange}
+          value={selectedInterests}/>
+        </div>
+
+        <div className='form-group'>
+        <label className="label">Default Time Zone</label>
+        <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
+        </div>
+
+        <div className='form-group'>
+          <label className="label">Availability</label>
+          <Select isMulti
+            options={availabilityOptions}
+            value={availability}
+            onChange={handleAvailability}/>
+        </div>
+
+        <div className='form-group'>
+          <label className="label">Visibility</label>
+          <Select options={VisibilityOptions} onChange={handleVisibility} />
+        </div>
+        
+
         </div>
       </div>
     </div>
