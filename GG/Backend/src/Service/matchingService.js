@@ -6,14 +6,15 @@ let checkFriends = (user_native, user_target, user_id) => {
             console.log("seventh check")
             console.log("user_native: ", user_native)
             let profiles = await db.UserProfile.findAll({
-                //attributes: ['id'],
                 where: {native_language : user_target},
-                order: [['id', 'ASC']]
+                order: [['id', 'ASC']],
+                include: [{ model: db.Interest, through: { attributes: [] } }]
             })
             console.log("eighth check")
             console.log(profiles.length, " users found")
             let user = await db.UserProfile.findOne({
-                where : {id : user_id}
+                where : {id : user_id},
+                include: [{ model: db.Interest, through: { attributes: [] } }]
             })
             let scores = [];
             let indices = [];
@@ -26,13 +27,15 @@ let checkFriends = (user_native, user_target, user_id) => {
                     where: {id: profiles[i].id}
                 })
                 accounts.push(account);
-                let score = 6*(+ (profile.gender == user.gender)) + 5*(+ (profile.profession == user.profession)) + 5*(+ (profile.hobby == user.hobby)) - 0.3*(Math.abs(user.age-profile.age));
+                const userInterestNames = (user.Interests || []).map(i => i.interest_name)
+                const profileInterestNames = (profile.Interests || []).map(i => i.interest_name)
+                const shared = profileInterestNames.filter(n => userInterestNames.includes(n))
+                let score = 6*(+ (profile.gender == user.gender)) + 5*(+ (profile.profession == user.profession)) + 2*shared.length - 0.3*(Math.abs(user.age-profile.age));
                 scores.push(score);
                 /* console.log("Name: ", account.firstName, " ", account.lastName)
                 console.log("Age: ", profiles[i].age)
                 console.log("Gender: ", profiles[i].gender)
                 console.log("Profession: ", profiles[i].profession)
-                console.log("Hobby: ", profiles[i].hobby)
                 console.log("\n") */
             }
             let scorescopy = [...scores];

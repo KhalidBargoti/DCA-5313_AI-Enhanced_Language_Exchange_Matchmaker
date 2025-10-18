@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiUserPlus } from 'react-icons/fi';
+import { DateTime } from "luxon";  
+import Select from "react-select";
 
 import {
   handleGetUserNamesApi,
@@ -13,7 +15,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests} from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -35,6 +37,9 @@ const FriendSearch = () => {
   const [interestsQuery, setInterestsQuery] = useState('');
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [selectedMbti, setSelectedMbti] = useState([]);
+  const [selectedZodiac, setSelectedZodiac] = useState([]);
+
 
   const handleAvailabilityFilter = () => {
     if (!selectedAvailability || selectedAvailability.length === 0) {
@@ -47,38 +52,52 @@ const FriendSearch = () => {
     }
 
     console.log('Filtering users by availability:', selectedAvailability);
-    
-    // TODO: call the backend API with availability data
-    const filteredUsers = allUserNames.filter((user) => {
-      // returns all users atm
-      // TODO: implement the actual availability matching logic
-      return true;
-    });
+    try {
+      // Normalize selected availability to UTC
+      const selectedSlotsUTC = selectedAvailability.map(slot => {
+        const convertTo24Hr = (timeStr) => {
+          const dt = DateTime.fromFormat(timeStr.trim(), "h a", { zone: currentUser?.default_time_zone || "UTC" });
+          return dt.isValid ? dt.toFormat("HH:mm") : null;
+        };
+        
+        const start = convertTo24Hr(slot.time);
+        const end = DateTime.fromFormat(start, "HH:mm").plus({ hours: 1 }).toFormat("HH:mm"); // assume 1-hour slot
+        return {
+          day_of_week: slot.day,
+          start_utc: DateTime.fromISO(`2024-01-01T${start}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+          end_utc: DateTime.fromISO(`2024-01-01T${end}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
+        };
+      });
+      // Filter all users
+      const filteredUsers = allUserNames.filter(user => {
+        if (!Array.isArray(user.Availability) || user.Availability.length === 0)
+          return false;
 
-    setUserNames(filteredUsers);
-    setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+        const userZone = user.default_time_zone || "UTC";
+        return user.Availability.some(userSlot => {
+          const userStartUTC = DateTime.fromISO(`2024-01-01T${userSlot.start_time}`, { zone: userZone }).toUTC();
+          const userEndUTC = DateTime.fromISO(`2024-01-01T${userSlot.end_time}`, { zone: userZone }).toUTC();
+
+          return selectedSlotsUTC.some(selSlot =>
+            userSlot.day_of_week === selSlot.day_of_week &&
+            userStartUTC.toISO() === selSlot.start_utc.toISO() &&
+            userEndUTC.toISO() === selSlot.end_utc.toISO()
+          );
+        });
+      });
+      setUserNames(filteredUsers);
+      setSuccessMessage(`Filtered by availability: ${selectedAvailability.length} time slots selected`);
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error("Error filtering by availability:", error);
+      setSuccessMessage("Error applying availability filter");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    }
   };
 
   useEffect(() => {
-    // Get time slot data from AvailabilityPicker
-    const availabilityParam = search.get('availability');
-    if (availabilityParam) {
-      try {
-        const availabilityData = JSON.parse(availabilityParam);
-        setSelectedAvailability(availabilityData);
-        console.log('Received availability data:', availabilityData);
-        
-        setTimeout(() => {
-          handleAvailabilityFilter();
-        }, 100);
-      } catch (error) {
-        console.error('Error parsing availability data:', error);
-      }
-    }
-    
     const fetchUserData = async () => {
       try {
         console.log(
@@ -89,67 +108,65 @@ const FriendSearch = () => {
         const profilesResponse = await handleGetUserPreferencesApi();
 
         // Merge user data with their profiles
-        const mergedUsers = userResponse.data.map((user) => {
-          const userProfile = profilesResponse.data.find(
-            (profile) => profile.id === user.id
-          );
-          const mergedUser = {
-            ...user,
-            ...userProfile, // Spread profile data into user object
-            score: null, // Initialize compatibility score
-          };
-          console.log('Merged User:', mergedUser); // Debugging Line
-          return mergedUser;
-        });
-
-        const visibleUsers = mergedUsers.filter(
-          (user) => user.visibility === 'Show'
+        const mergedUsers = await Promise.all(
+          userResponse.data.map(async (user) => {
+            const userProfile = profilesResponse.data.find(
+              (profile) => profile.id === user.id
+            );
+        
+            // Fetch current user's interests
+            let userInterests = [];
+            try {
+              const interestsResponse = await handleGetUserInterests(user.id);
+              userInterests = interestsResponse || [];
+              console.log(`User interests received for user ${user.id}:`, userInterests);
+            } catch (err) {
+              console.error(`Error fetching interests for user ${user.id}:`, err);
+            }
+            // Fetch current user's availability
+            let userAvailability = [];
+            try {
+              const availabilityResponse = await handleGetUserAvailability(user.id);
+              userAvailability = availabilityResponse || [];
+              console.log(`User availability received for user ${user.id}:`, userAvailability);
+            } catch (err) {
+              console.error(`Error fetching availability for user ${user.id}:`, err);
+            }
+        
+            return {
+              ...user,
+              ...userProfile,
+              Interests: userInterests,
+              Availability: userAvailability,
+              score: null,
+            };
+          })
         );
+
+        // Step 3: Filter visible users
+        const visibleUsers = mergedUsers.filter((user) => user.visibility === 'Show');
 
         console.log('Visible users:', visibleUsers);
 
         setUserNames(visibleUsers);
         setAllUserNames(visibleUsers);
 
-        // Retrieve stored current user data from userData.js
+        // Step 4: Get current user info
         const currentUserData = getUserData();
         setCurrentUser(currentUserData);
 
-        console.log('Fetched user names:', userResponse.data);
-        console.log('Retrieved current user data:', currentUserData);
-        console.log('current user id:', id);
-
-        // Fetch friends list for the current user
-        try {
-          console.log('Fetching friends list for user ID:', id);
-      
-          const friendsResponse = await handleGetFriendsList(id);
-          console.log('Full friendsResponse:', friendsResponse);
-      
-          // Safely access friendsList
-          const friendsList = friendsResponse?.data?.friendsList;
-      
-          if (Array.isArray(friendsList)) {
-              setUserList(friendsList.join(', ')); // Convert the list to a string
-              console.log(userList);
-          } else {
-              console.error('Unexpected friendsList type:', friendsList);
-              setUserList(''); // Reset to empty string on unexpected structure
-          }
-        } catch (friendsError) {
-            console.error('Error fetching friends list:', friendsError);
-            setUserList(''); // Reset to empty string on fetch error
-        }
-      
+        const currentUserId = currentUserData?.id || id; // fallback
+        console.log('Current user ID (resolved):', currentUserId);
 
 
         setLoading(false);
       } catch (err) {
-        setError(err);
         console.error('Error in fetchUserData:', err);
+        setError(err);
         setLoading(false);
       }
     };
+
     fetchUserData();
 
     // Fetch Interests list from DB (same source as CreateProfile.js)
@@ -171,6 +188,29 @@ const FriendSearch = () => {
     
   }, [id]);
 
+  useEffect(() => {
+    const availabilityParam = search.get('availability');
+    if (availabilityParam) {
+      try {
+        const availabilityData = JSON.parse(availabilityParam);
+        console.log('Received availability data from URL:', availabilityData);
+        setSelectedAvailability(availabilityData);
+      } catch (error) {
+        console.error('Error parsing availability data:', error);
+      }
+    }
+  }, [search]);
+
+  useEffect(() => {
+    if (
+      selectedAvailability &&
+      selectedAvailability.length > 0 &&
+      allUserNames.length > 0
+    ) {
+      console.log("Auto-applying availability filter...");
+      handleAvailabilityFilter();
+    }
+  }, [selectedAvailability, allUserNames]);
 
   const handleQuickAddFriend = async (user) => {
     try {
@@ -236,17 +276,19 @@ const FriendSearch = () => {
       6 * (selectedProfile.gender === currentUser.gender ? 1 : 0);
     const professionScore =
       5 * (selectedProfile.profession === currentUser.profession ? 1 : 0);
-    const hobbyScore =
-      5 * (selectedProfile.hobby === currentUser.hobby ? 1 : 0);
+    const interestsA = (selectedProfile.Interests || []).map(i => i.interest_name || i)
+    const interestsB = (currentUser.Interests || []).map(i => i.interest_name || i)
+    const shared = interestsA.filter(n => interestsB.includes(n))
+    const interestsScore = 2 * shared.length;
     const ageDifferenceScore =
       -0.3 * Math.abs((selectedProfile.age || 0) - (currentUser.age || 0));
 
     const totalScore =
-      genderScore + professionScore + hobbyScore + ageDifferenceScore;
+      genderScore + professionScore + interestsScore + ageDifferenceScore;
 
     console.log('Gender score:', genderScore);
     console.log('Profession score:', professionScore);
-    console.log('Hobby score:', hobbyScore);
+    console.log('Interests score:', interestsScore);
     console.log('Age difference score:', ageDifferenceScore);
     console.log('Total compatibility score:', totalScore);
 
@@ -436,23 +478,76 @@ const FriendSearch = () => {
     return 'N/A';
   };
 
-  // Button-triggered interests filter
-  const filteredUsers = (userNames || []).filter((u) => {
-    const q = (interestsQuery || '').trim().toLowerCase();
-    if (!q) return true; // no committed query -> include all
+  const MBTI_OPTIONS = [
+    'INTJ','INTP','ENTJ','ENTP',
+    'INFJ','INFP','ENFJ','ENFP',
+    'ISTJ','ISFJ','ESTJ','ESFJ',
+    'ISTP','ISFP','ESTP','ESFP'
+  ];
+  const ZODIAC_OPTIONS = [
+    'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+    'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
+  ];
 
-    const fields = [
-      u.interests,
-      u.interest,
-      u.hobby,
-      Array.isArray(u.Interests) ? u.Interests.map(i => i?.interest_name) : undefined
-    ]
+  // Convert to {value,label} for react-select
+  const MBTI_OPTIONS_OPT   = MBTI_OPTIONS.map(v => ({ value: v, label: v }));
+  const ZODIAC_OPTIONS_OPT = ZODIAC_OPTIONS.map(v => ({ value: v, label: v }));
 
-    const terms = q.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean);
-    if (!terms.length) return true;
+  // Make react-select fill width and match your palette
+  const customSelectStyles = {
+    container: (base) => ({ ...base, width: '100%' }),
+    control:   (base, state) => ({
+      ...base,
+      minHeight: 42,
+      borderRadius: 6,
+      borderColor: state.isFocused ? '#6344A6' : '#ccc',
+      boxShadow: 'none',
+      '&:hover': { borderColor: '#6344A6' }
+    }),
+    multiValue:       (base) => ({ ...base, background: '#ede7f6' }),
+    multiValueLabel:  (base) => ({ ...base, color: '#6344A6' }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: '#6344A6',
+      ':hover': { background: '#6344A6', color: '#fff' }
+    }),
+    menu: (base) => ({ ...base, zIndex: 5 }) // ensure it overlays
+  };
 
-    return terms.some((term) => fields.some((f) => f.includes(term)));
-  });
+  const applyPersonalityFilters = () => {
+    let base = allUserNames;
+
+    // Name/email filter
+    const q = (filterInput || '').trim().toLowerCase();
+    if (q) {
+      base = base.filter(u =>
+        (u.firstName || '').toLowerCase().includes(q) ||
+        (u.lastName  || '').toLowerCase().includes(q) ||
+        (u.email     || '').toLowerCase().includes(q)
+      );
+    }
+
+    // MBTI (multi, case-insensitive)
+    if (selectedMbti.length) {
+      const mbtiSet = new Set(selectedMbti.map(v => v.toUpperCase()));
+      base = base.filter(u => mbtiSet.has(String(u.mbti || '').toUpperCase()));
+    }
+
+    // Zodiac (multi, case-insensitive)
+    if (selectedZodiac.length) {
+      const zSet = new Set(selectedZodiac.map(v => v.toLowerCase()));
+      base = base.filter(u => zSet.has(String(u.zodiac || '').toLowerCase()));
+    }
+
+    setUserNames(base);
+  };
+
+  // Clear all personality filters
+  const clearPersonalityFilters = () => {
+    setSelectedMbti([]);
+    setSelectedZodiac([]);
+    setUserNames(allUserNames);
+  };
 
   return (
     <div className="friend-search-container">
@@ -471,16 +566,42 @@ const FriendSearch = () => {
         </div>
 
         <div className="filter-section">
-          <h3>Filter Users by Preference</h3>
-          <input
-            type="text"
-            placeholder="Enter preference"
-            value={preferenceFilterInput}
-            onChange={(e) => setPreferenceFilterInput(e.target.value)}
-          />
-          <button className="filter-btn" onClick={handlePreferenceFilter}>
-            Filter by Preference
-          </button>
+          <h3>Filter Users by MBTI & Zodiac</h3>
+
+          <div className="two-col">
+            <div>
+              <label className="filter-label">MBTI (multi-select)</label>
+              <Select
+                isMulti
+                options={MBTI_OPTIONS_OPT}
+                value={MBTI_OPTIONS_OPT.filter(o => selectedMbti.includes(o.value))}
+                onChange={(vals) => setSelectedMbti((vals || []).map(v => v.value))}
+                placeholder="Select MBTI types…"
+                styles={customSelectStyles}
+              />
+            </div>
+
+            <div>
+              <label className="filter-label">Zodiac (multi-select)</label>
+              <Select
+                isMulti
+                options={ZODIAC_OPTIONS_OPT}
+                value={ZODIAC_OPTIONS_OPT.filter(o => selectedZodiac.includes(o.value))}
+                onChange={(vals) => setSelectedZodiac((vals || []).map(v => v.value))}
+                placeholder="Select zodiac signs…"
+                styles={customSelectStyles}
+              />
+            </div>
+          </div>
+
+          <div className="btn-row spread">
+            <button className="filter-btn" onClick={applyPersonalityFilters}>
+              Apply Filters
+            </button>
+            <button className="filter-btn" onClick={clearPersonalityFilters}>
+              Clear
+            </button>
+          </div>
         </div>
 
         <div className="filter-section">
@@ -562,18 +683,22 @@ const FriendSearch = () => {
               <th>Email</th>
               <th>Gender</th>
               <th>Profession</th>
-              <th>Hobby</th>
+              <th>Interests</th>
+              <th>MBTI</th>
+              <th>Zodiac</th>
+              <th>Time Zone</th>
               <th>Age</th>
               {/* New Columns */}
               <th>Native Language</th>
               <th>Target Language</th>
               <th>Compatibility Score</th>
+              <th>Availability</th>
               {/* ➕ Add-Friend column */}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user, index) => (
+            {userNames.map((user, index) => (
               <tr
                 key={index}
                 onClick={() => handleUserClick(user)}
@@ -585,12 +710,16 @@ const FriendSearch = () => {
                 <td>{user.email}</td>
                 <td>{user.gender}</td>
                 <td>{user.profession}</td>
-                <td>{user.hobby}</td>
+                <td>{Array.isArray(user.Interests) ? user.Interests.map(i => i.interest_name).join(', ') : ''}</td>
+                <td>{user.mbti}</td>
+                <td>{user.zodiac}</td>
+                <td>{user.default_time_zone}</td>
                 <td>{user.age}</td>
                 {/* Adjusted Field Names with Helper Function */}
                 <td>{getField(user, ["nativeLanguage", "native_language"])}</td>
                 <td>{getField(user, ["targetLanguage", "target_language"])}</td>
                 <td>{user.score !== null ? user.score : "N/A"}</td>
+                <td>{Array.isArray(user.Availability) ? user.Availability.map(a => `${a.day_of_week} ${a.start_time}`).join(', '): ''}</td>
 
                 {/* ➕ Add-Friend button cell */}
                 <td>
