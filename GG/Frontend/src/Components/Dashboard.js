@@ -215,6 +215,7 @@ function Dashboard()  {
           <button className="btn-action" onClick={call}>Call</button>
           <button className="btn-action" onClick={Translator}>Translator</button>
           <button className="btn-action" onClick={goToUserReport}>User Report</button>
+          <button className="btn-action" disabled>AI Coming Soon</button>
       </div>
 
     </div>
