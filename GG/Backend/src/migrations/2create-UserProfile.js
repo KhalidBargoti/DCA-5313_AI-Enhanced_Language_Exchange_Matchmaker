@@ -55,6 +55,10 @@ module.exports = {
             allowNull: true,
             type: Sequelize.STRING
         },
+        friends_list: {                
+            allowNull: true,
+            type: Sequelize.JSON         
+        },
         createdAt: {
             allowNull: false,
             type: Sequelize.DATE

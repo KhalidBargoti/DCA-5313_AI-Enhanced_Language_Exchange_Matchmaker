@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'UTC'
     },
+    friends_list: {
+    type: DataTypes.JSON,   // can store array of friend IDs
+    allowNull: true
+  },
     visibility: DataTypes.STRING
   }, {
     sequelize,
