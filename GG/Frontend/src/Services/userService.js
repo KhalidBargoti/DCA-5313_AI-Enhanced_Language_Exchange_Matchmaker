@@ -15,6 +15,11 @@ const handleRegisterApi= (firstName, lastName, Email, userPassword) => {
 const handleProfileCreationAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility) => {
     return axios.post('/CreateProfile', {id: id, native_language: native_language, target_language: target_language, target_language_proficiency: target_language_proficiency, age: age, gender: gender, profession: profession, mbti: mbti, zodiac: zodiac, default_time_zone: default_time_zone, visibility: visibility}) ;
 }
+
+const handleProfileUpdateAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility) => {
+    return axios.put('/UpdateProfile', {id: id, native_language: native_language, target_language: target_language, target_language_proficiency: target_language_proficiency, age: age, gender: gender, profession: profession, mbti: mbti, zodiac: zodiac, default_time_zone: default_time_zone, visibility: visibility}) ;
+}
+
 //return
 const handleChatApi = (senderId) => {
     return axios.get(`/Chats/${senderId}`)
@@ -134,7 +139,7 @@ export const handleGetUserProficiencyAndRating = async (userId) => {
 
 
 export {
-        handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleChatApi, 
+        handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleProfileUpdateAPI, handleChatApi, 
         handleGetUser, getMessages, addMessage, handleTranslator, handleMatch, handleGetProfile,
         handleDataPopulation, handleUserLogout, handleUpdateRating, handleUpdateProficiency,
         handleAddComment, handleAddToFriendsList, handleGetFriendsList,

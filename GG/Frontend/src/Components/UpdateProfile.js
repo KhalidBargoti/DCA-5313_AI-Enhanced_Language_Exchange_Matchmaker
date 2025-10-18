@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import React from "react";
 import './Registration.css'; 
-import './CreateProfile.css'; 
+import './UpdateProfile.css'; 
 import Select from "react-select";
 
 import Button from 'react-bootstrap/Button';
 
-import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest, handleAddUserAvailability } from '../Services/userService';
+import { handleProfileUpdateAPI, handleGetAllInterests, handleAddUserInterest, handleAddUserAvailability } from '../Services/userService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
 
-function CreateProfile() {
+function UpdateProfile() {
     // States for registration
   const [nativeLanguage, setNativeLanguage] = useState('');
   const [targetLanguage, setTargetLanguage] = useState('');
@@ -221,9 +221,9 @@ const [search] = useSearchParams();
     setError("");
     try{
         // for backend
-        console.log('Sending create: ' + nativeLanguage + targetLanguage + targetLanguageProficiency + age + gender + profession + mbti + zodiac + defaultTimeZone + visibility);
-      let data = await handleProfileCreationAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, mbti, zodiac, defaultTimeZone, visibility);
-      console.log('Create done');
+        console.log('Sending update: ' + nativeLanguage + targetLanguage + targetLanguageProficiency + age + gender + profession + mbti + zodiac + defaultTimeZone + visibility);
+      let data = await handleProfileUpdateAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, mbti, zodiac, defaultTimeZone, visibility);
+      console.log('Update done');
 
       // add user interests
       if (selectedInterests.length > 0) {
@@ -258,7 +258,7 @@ const [search] = useSearchParams();
       if (data && data.errCode === 0){
         // todo when login successfull!
         setSubmitted(true);
-        console.log("Profile Creation Successful!");
+        console.log("Profile Update Successful!");
       }
     } catch(error){
       if (error.response){
@@ -417,4 +417,4 @@ const [search] = useSearchParams();
   );
     
 }
-export default CreateProfile;
+export default UpdateProfile;
