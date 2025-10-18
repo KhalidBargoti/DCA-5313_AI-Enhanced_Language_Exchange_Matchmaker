@@ -34,7 +34,7 @@ const FriendSearch = () => {
   const id = search.get('id');
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
   const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
-  const [interestsQuery, setInterestsQuery] = useState('');
+  // const [interestsQuery, setInterestsQuery] = useState('');
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedMbti, setSelectedMbti] = useState([]);
@@ -539,6 +539,33 @@ const FriendSearch = () => {
       base = base.filter(u => zSet.has(String(u.zodiac || '').toLowerCase()));
     }
 
+    // Interests (multi; uses getUserInterests results in u.Interests)
+    if (selectedInterests.length) {
+      const wanted = new Set(selectedInterests.map(v => v.toLowerCase()));
+
+      base = base.filter(u => {
+        const userInterestStrings = [];
+
+        // From getUserInterests: array of objects or strings
+        if (Array.isArray(u.Interests)) {
+          for (const it of u.Interests) {
+            const name = (it?.interest_name ?? it)?.toString().toLowerCase();
+            if (name) userInterestStrings.push(name);
+          }
+        }
+        // Fallbacks if some users also carry string/array fields
+        const extras = [u.interests, u.interest, u.hobby]
+          .filter(Boolean)
+          .flatMap(v => Array.isArray(v) ? v : [v])
+          .map(v => String(v).toLowerCase());
+
+        userInterestStrings.push(...extras);
+
+        // match ANY selected interest
+        return userInterestStrings.some(s => wanted.has(s));
+      });
+    }
+
     setUserNames(base);
   };
 
@@ -546,6 +573,7 @@ const FriendSearch = () => {
   const clearPersonalityFilters = () => {
     setSelectedMbti([]);
     setSelectedZodiac([]);
+    setSelectedInterests([]);
     setUserNames(allUserNames);
   };
 
@@ -606,35 +634,36 @@ const FriendSearch = () => {
 
         <div className="filter-section">
           <h3>Filter Users by Interest(s)</h3>
-          <label className="filter-label">Select one or more</label>
-          <select
-            multiple
-            size={6}
-            value={selectedInterests}
-            onChange={(e) =>
-              setSelectedInterests(Array.from(e.target.selectedOptions, o => o.value))
-            }
-            className="filter-multiselect"
-          >
-            {allInterests.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
+
+          <label className="filter-label">Interests (multi-select)</label>
+          <Select
+            isMulti
+            options={allInterests.map(n => ({ value: n, label: n }))}
+            value={allInterests
+              .map(n => ({ value: n, label: n }))
+              .filter(o => selectedInterests.includes(o.value))}
+            onChange={(vals) => setSelectedInterests((vals || []).map(v => v.value))}
+            placeholder="Select interests…"
+            styles={customSelectStyles}
+          />
+
+          <div className="btn-row spread" style={{ marginTop: 10 }}>
             <button
               className="filter-btn"
-              onClick={() => setInterestsQuery(selectedInterests.join(','))}
+              onClick={applyPersonalityFilters}
             >
               Apply Interests
             </button>
             <button
               className="filter-btn"
-              onClick={() => { setSelectedInterests([]); setInterestsQuery(''); setUserNames(allUserNames); }}
+              onClick={() => {
+                setSelectedInterests([]);
+                setUserNames(allUserNames);
+              }}
             >
               Clear
             </button>
           </div>
-          <small>Tip: hold Ctrl/Cmd or Shift to select multiple.</small>
         </div>
 
         <div className="filter-section">
