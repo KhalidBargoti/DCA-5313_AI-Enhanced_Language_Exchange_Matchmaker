@@ -4,7 +4,7 @@ import './Registration.css';
 import './CreateProfile.scss'; 
 import Select from "react-select";
 
-import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest } from '../Services/userService';
+import { handleProfileCreationAPI, handleGetAllInterests, handleAddUserInterest, handleAddUserAvailability } from '../Services/userService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
 
@@ -118,6 +118,30 @@ function CreateProfile() {
     { value: "Hide", label: "Hide" },
   ];
 
+  const availabilityOptions = [
+    { value: "Monday Morning", label: "Monday Morning" },
+    { value: "Monday Afternoon", label: "Monday Afternoon" },
+    { value: "Monday Evening", label: "Monday Evening" },
+    { value: "Tuesday Morning", label: "Tuesday Morning" },
+    { value: "Tuesday Afternoon", label: "Tuesday Afternoon" },
+    { value: "Tuesday Evening", label: "Tuesday Evening" },
+    { value: "Wednesday Morning", label: "Wednesday Morning" },
+    { value: "Wednesday Afternoon", label: "Wednesday Afternoon" },
+    { value: "Wednesday Evening", label: "Wednesday Evening" },
+    { value: "Thursday Morning", label: "Thursday Morning" },
+    { value: "Thursday Afternoon", label: "Thursday Afternoon" },
+    { value: "Thursday Evening", label: "Thursday Evening" },
+    { value: "Friday Morning", label: "Friday Morning" },
+    { value: "Friday Afternoon", label: "Friday Afternoon" },
+    { value: "Friday Evening", label: "Friday Evening" },
+    { value: "Saturday Morning", label: "Saturday Morning" },
+    { value: "Saturday Afternoon", label: "Saturday Afternoon" },
+    { value: "Saturday Evening", label: "Saturday Evening" },
+    { value: "Sunday Morning", label: "Sunday Morning" },
+    { value: "Sunday Afternoon", label: "Sunday Afternoon" },
+    { value: "Sunday Evening", label: "Sunday Evening" },
+  ];
+
   useEffect(() => {
     const fetchInterests = async () => {
       try {
@@ -174,6 +198,10 @@ function CreateProfile() {
 
   const handleDefaultTimeZone = (selectedOption) => {
     setDefaultTimeZone(selectedOption.value);
+  };
+
+  const handleAvailability = (selectedOptions) => {
+    setAvailability(selectedOptions || []);
   };
 
   const handleVisibility = (selectedOption) => {
@@ -364,6 +392,16 @@ function CreateProfile() {
               </div>
 
               <div className='form-group'>
+                <label className="label">Availability</label>
+                <Select 
+                  isMulti
+                  options={availabilityOptions}
+                  value={availability}
+                  onChange={handleAvailability}
+                />
+              </div>
+
+              <div className='form-group'>
                 <label className="label">Visibility</label>
                 <Select options={VisibilityOptions} onChange={handleVisibility} />
               </div>
@@ -373,51 +411,6 @@ function CreateProfile() {
               Update Profile
             </button>
           </form>
-        </div>
-
-        <div className='form-group'>
-        <label className="label">Profession*</label>
-        <Select options={Profession} onChange={handleProfession}/>
-        </div>
-
-
-        <div className='form-group'>
-        <label className="label">Personality Type</label>
-        <Select options={MBTI} onChange={handleMBTI}/>
-        </div>
-
-        <div className='form-group'>
-        <label className="label">Zodiac</label>
-        <Select options={Zodiac} onChange={handleZodiac}/>
-        </div>
-
-        <div className='form-group'>
-        <label className="label">Interests</label>
-        <Select isMulti
-          options={allInterests}
-          onChange={handleInterestsChange}
-          value={selectedInterests}/>
-        </div>
-
-        <div className='form-group'>
-        <label className="label">Default Time Zone</label>
-        <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
-        </div>
-
-        <div className='form-group'>
-          <label className="label">Availability</label>
-          <Select isMulti
-            options={availabilityOptions}
-            value={availability}
-            onChange={handleAvailability}/>
-        </div>
-
-        <div className='form-group'>
-          <label className="label">Visibility</label>
-          <Select options={VisibilityOptions} onChange={handleVisibility} />
-        </div>
-        
-
         </div>
       </div>
     </div>
