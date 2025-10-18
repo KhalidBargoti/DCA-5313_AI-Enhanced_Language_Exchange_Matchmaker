@@ -15,7 +15,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -34,6 +34,9 @@ const FriendSearch = () => {
   const id = search.get('id');
   const [userList, setUserList] = useState(''); // Initialize the list as an empty string
   const [selectedAvailability, setSelectedAvailability] = useState(null); // Store selected availability slots
+  // const [interestsQuery, setInterestsQuery] = useState('');
+  const [allInterests, setAllInterests] = useState([]);
+  const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedMbti, setSelectedMbti] = useState([]);
   const [selectedZodiac, setSelectedZodiac] = useState([]);
 
@@ -165,6 +168,24 @@ const FriendSearch = () => {
     };
 
     fetchUserData();
+
+    // Fetch Interests list from DB (same source as CreateProfile.js)
+    const fetchInterests = async () => {
+      try {
+        const res = await handleGetAllInterests();
+        const raw = res?.data ?? res;
+        const names = Array.isArray(raw)
+          ? raw.map(i => i?.interest_name ?? i?.name ?? i).filter(Boolean)
+          : [];
+        const uniqueSorted = Array.from(new Set(names)).sort((a,b) => a.localeCompare(b));
+        setAllInterests(uniqueSorted);
+      } catch (e) {
+        console.error('Failed to fetch interests:', e);
+        setAllInterests([]);
+      }
+    };
+    fetchInterests();
+    
   }, [id]);
 
   useEffect(() => {
@@ -518,6 +539,33 @@ const FriendSearch = () => {
       base = base.filter(u => zSet.has(String(u.zodiac || '').toLowerCase()));
     }
 
+    // Interests (multi; uses getUserInterests results in u.Interests)
+    if (selectedInterests.length) {
+      const wanted = new Set(selectedInterests.map(v => v.toLowerCase()));
+
+      base = base.filter(u => {
+        const userInterestStrings = [];
+
+        // From getUserInterests: array of objects or strings
+        if (Array.isArray(u.Interests)) {
+          for (const it of u.Interests) {
+            const name = (it?.interest_name ?? it)?.toString().toLowerCase();
+            if (name) userInterestStrings.push(name);
+          }
+        }
+        // Fallbacks if some users also carry string/array fields
+        const extras = [u.interests, u.interest, u.hobby]
+          .filter(Boolean)
+          .flatMap(v => Array.isArray(v) ? v : [v])
+          .map(v => String(v).toLowerCase());
+
+        userInterestStrings.push(...extras);
+
+        // match ANY selected interest
+        return userInterestStrings.some(s => wanted.has(s));
+      });
+    }
+
     setUserNames(base);
   };
 
@@ -525,6 +573,7 @@ const FriendSearch = () => {
   const clearPersonalityFilters = () => {
     setSelectedMbti([]);
     setSelectedZodiac([]);
+    setSelectedInterests([]);
     setUserNames(allUserNames);
   };
 
@@ -578,6 +627,40 @@ const FriendSearch = () => {
               Apply Filters
             </button>
             <button className="filter-btn" onClick={clearPersonalityFilters}>
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div className="filter-section">
+          <h3>Filter Users by Interest(s)</h3>
+
+          <label className="filter-label">Interests (multi-select)</label>
+          <Select
+            isMulti
+            options={allInterests.map(n => ({ value: n, label: n }))}
+            value={allInterests
+              .map(n => ({ value: n, label: n }))
+              .filter(o => selectedInterests.includes(o.value))}
+            onChange={(vals) => setSelectedInterests((vals || []).map(v => v.value))}
+            placeholder="Select interests…"
+            styles={customSelectStyles}
+          />
+
+          <div className="btn-row spread" style={{ marginTop: 10 }}>
+            <button
+              className="filter-btn"
+              onClick={applyPersonalityFilters}
+            >
+              Apply Interests
+            </button>
+            <button
+              className="filter-btn"
+              onClick={() => {
+                setSelectedInterests([]);
+                setUserNames(allUserNames);
+              }}
+            >
               Clear
             </button>
           </div>
