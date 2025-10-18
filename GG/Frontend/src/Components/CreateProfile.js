@@ -118,29 +118,31 @@ function CreateProfile() {
     { value: "Hide", label: "Hide" },
   ];
 
-  const availabilityOptions = [
-    { value: "Monday Morning", label: "Monday Morning" },
-    { value: "Monday Afternoon", label: "Monday Afternoon" },
-    { value: "Monday Evening", label: "Monday Evening" },
-    { value: "Tuesday Morning", label: "Tuesday Morning" },
-    { value: "Tuesday Afternoon", label: "Tuesday Afternoon" },
-    { value: "Tuesday Evening", label: "Tuesday Evening" },
-    { value: "Wednesday Morning", label: "Wednesday Morning" },
-    { value: "Wednesday Afternoon", label: "Wednesday Afternoon" },
-    { value: "Wednesday Evening", label: "Wednesday Evening" },
-    { value: "Thursday Morning", label: "Thursday Morning" },
-    { value: "Thursday Afternoon", label: "Thursday Afternoon" },
-    { value: "Thursday Evening", label: "Thursday Evening" },
-    { value: "Friday Morning", label: "Friday Morning" },
-    { value: "Friday Afternoon", label: "Friday Afternoon" },
-    { value: "Friday Evening", label: "Friday Evening" },
-    { value: "Saturday Morning", label: "Saturday Morning" },
-    { value: "Saturday Afternoon", label: "Saturday Afternoon" },
-    { value: "Saturday Evening", label: "Saturday Evening" },
-    { value: "Sunday Morning", label: "Sunday Morning" },
-    { value: "Sunday Afternoon", label: "Sunday Afternoon" },
-    { value: "Sunday Evening", label: "Sunday Evening" },
-  ];
+  const generateHourlySlots = (day) => {
+    const slots = [];
+    for (let hour = 8; hour < 21; hour++) {
+      const start = String(hour).padStart(2, '0') + ':00';
+      const end = String(hour + 1).padStart(2, '0') + ':00';
+  
+      const formatHour = (h) => {
+        const suffix = h >= 12 ? 'pm' : 'am';
+        const display = ((h + 11) % 12 + 1); // convert 13 -> 1, 0 -> 12, etc
+        return `${display}${suffix}`;
+      };
+  
+      const label = `${day} ${formatHour(hour)}-${formatHour(hour + 1)}`;
+  
+      slots.push({
+        value: { day_of_week: day, start_time: start, end_time: end },
+        label,
+      });
+    }
+    return slots;
+  };
+  
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  
+  const availabilityOptions = days.flatMap(generateHourlySlots);
 
   useEffect(() => {
     const fetchInterests = async () => {
@@ -255,15 +257,6 @@ function CreateProfile() {
       
       if (data && data.errCode === 0) {
         setSubmitted(true);
-        console.log("Profile Creation Successful!");
-        
-        // Navigate after successful creation
-        navigate({
-          pathname: "/Dashboard",
-          search: createSearchParams({
-            id: id
-          }).toString()
-        });
       }
     } catch (error) {
       setError(true);
@@ -274,6 +267,14 @@ function CreateProfile() {
       }
       console.log(error);
     }
+    console.log("Profile Creation Successful!");
+    // Navigate after successful creation
+    navigate({
+      pathname: "/Dashboard",
+      search: createSearchParams({
+        id: id
+      }).toString()
+    });
   };
  
   // Showing success message
@@ -326,7 +327,7 @@ function CreateProfile() {
             {successMessage()}
           </div>
  
-          <form onSubmit={handleSubmit}>
+          <form>
             <div className="profile-container">
               {/* Labels and inputs for form data */}
 
@@ -407,7 +408,7 @@ function CreateProfile() {
               </div>
 
             </div>
-            <button className="btn-back-02" type="submit">
+            <button className="btn-back-02" type="submit" onClick={handleSubmit}>
               Update Profile
             </button>
           </form>
