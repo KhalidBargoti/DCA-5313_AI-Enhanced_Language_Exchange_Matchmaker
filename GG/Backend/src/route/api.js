@@ -3,6 +3,7 @@ import APIController from "../controller/APIController";
 import interestController from "../controller/interestController";
 import userInterestController from "../controller/userInterestController";
 import availabilityController from "../controller/availabilityController";
+import transcriptController from "../controller/transcriptController";
 //import userController from "../controller/userController.js";//added this
 
 let router = express.Router();
@@ -38,6 +39,8 @@ const initAPIRoute = (app) => {
     router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
     router.put('/users/:userId/availability', availabilityController.replaceAvailability);
 
+    router.get('/transcript/:filename', transcriptController.generateTranscript);
+    router.post('/transcript/:filename', transcriptController.generateTranscript);
   
     return app.use('/api/v1/', router)
 }
