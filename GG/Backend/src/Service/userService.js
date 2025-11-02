@@ -1,4 +1,4 @@
-import db, { sequelize } from '../models/index';
+import db, { sequelize } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 
 let user_id = null
@@ -288,6 +288,17 @@ let handleUserLogout = (id) => {
     })
 }
 
-module.exports = {
-handleUserLogin, checkUserEmail, handleUserRegister, handleProfileCreation, handleProfileUpdate, getUserInfoById, handleTranslator, getProfileById, handleDataPopulation, handleUserLogout
-}
+const userService = {
+    handleUserLogin,
+    checkUserEmail,
+    handleUserRegister,
+    handleProfileCreation,
+    handleProfileUpdate,
+    getUserInfoById,
+    handleTranslator,
+    getProfileById,
+    handleDataPopulation,
+    handleUserLogout
+  };
+  
+  export default userService;

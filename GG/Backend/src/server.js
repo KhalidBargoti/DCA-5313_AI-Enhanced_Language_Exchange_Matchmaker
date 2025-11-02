@@ -1,11 +1,11 @@
 import express from "express";
-import configViewEngine from "./config/viewEngine";
-import initWebRoute from './route/web';
-import initAPIRoute from './route/api';
+import configViewEngine from "./config/viewEngine.js";
+import initWebRoute from './route/web.js';
+import initAPIRoute from './route/api.js';
 import cors from 'cors';
+import dotenv from 'dotenv';
 
-
-require('dotenv').config();
+dotenv.config();
 const app = express();
 app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
 const port = process.env.PORT || 8080;

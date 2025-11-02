@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let handleMessageModel = (chatId, senderId, text) => {
      return new Promise(async (resolve, reject) => {
@@ -57,4 +57,5 @@ let handleFindMessages = (chatId) => {
 }
 
 
-module.exports = {handleMessageModel, handleFindMessage, handleFindMessages}
+const messageService = {handleMessageModel, handleFindMessage, handleFindMessages};
+export default messageService;

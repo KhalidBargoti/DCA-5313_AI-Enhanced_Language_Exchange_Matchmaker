@@ -1,8 +1,8 @@
 import express from "express";
-import APIController from "../controller/APIController";
-import interestController from "../controller/interestController";
-import userInterestController from "../controller/userInterestController";
-import availabilityController from "../controller/availabilityController";
+import APIController from "../controller/APIController.js";
+import interestController from "../controller/interestController.js";
+import userInterestController from "../controller/userInterestController.js";
+import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
 
 let router = express.Router();
