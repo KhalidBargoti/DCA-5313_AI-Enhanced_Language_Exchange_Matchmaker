@@ -25,6 +25,9 @@ const initAPIRoute = (app) => {
     router.post('/addToFriendsList', APIController.addToFriendsList);
     router.get('/getFriendsList', APIController.getFriendsList);
 
+    router.post('/addTrueFriend', APIController.addTrueFriend);
+    router.delete('/removeTrueFriend', APIController.removeTrueFriend);
+
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);
 

@@ -127,6 +127,11 @@ const handleReplaceUserAvailability = (userId, slots) => {
     return axios.put(`/api/v1/users/${userId}/availability`, { slots });
 };
 
+
+export const handleAddTrueFriend = (userId1, userId2) => {
+  return axios.post('/api/v1/addTrueFriend', { userId1, userId2 });
+};
+
 export const handleGetUserProficiencyAndRating = async (userId) => {
     try {
         const response = await axios.get(`/api/v1/getUserProfile/${userId}`);
