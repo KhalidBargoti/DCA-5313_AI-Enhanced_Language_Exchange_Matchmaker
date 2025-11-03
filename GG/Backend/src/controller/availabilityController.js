@@ -1,4 +1,4 @@
-import availabilityService from '../Service/availabilityService';
+import availabilityService from '../Service/availabilityService.js';
 
 let getAvailability = async (req, res) => {
     try {
@@ -44,6 +44,7 @@ let replaceAvailability = async (req, res) => {
     }
 }
 
-module.exports = { getAvailability, addAvailability, removeAvailability, replaceAvailability }
+const availabilityController = { getAvailability, addAvailability, removeAvailability, replaceAvailability };
+export default availabilityController;
 
 

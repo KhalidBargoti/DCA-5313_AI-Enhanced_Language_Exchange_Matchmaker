@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let getUserInterests = (user_id) => {
     return new Promise(async (resolve, reject) => {
@@ -39,6 +39,7 @@ let replaceUserInterests = async (user_id, interest_ids) => {
     }
 }
 
-module.exports = { getUserInterests, addUserInterest, removeUserInterest, replaceUserInterests }
+const userInterestService = { getUserInterests, addUserInterest, removeUserInterest, replaceUserInterests };
+export default userInterestService;
 
 

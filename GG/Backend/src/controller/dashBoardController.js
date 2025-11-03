@@ -1,4 +1,4 @@
-import dashboardService from '../Service/dashboardService';
+import dashboardService from '../Service/dashboardService.js';
 
 let handleDashBoard = async (req, res) => {
     let id = req.body.id;
@@ -18,4 +18,5 @@ let handleDashBoard = async (req, res) => {
     });
 };
 
-module.exports = { handleDashBoard };
+const dashboardController = { handleDashBoard };
+export default dashboardController;

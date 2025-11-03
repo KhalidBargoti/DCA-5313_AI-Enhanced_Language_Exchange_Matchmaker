@@ -1,4 +1,4 @@
-import { pool } from '../config/connectDB'; //TOWNSHEND: this was formally connected to sequelize...
+import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 
 //TOWNSHEND: getAllUsers may be the best way to sort users on a page since all data on a UserAccount is attached to the user
@@ -328,6 +328,7 @@ let removeFriend = async (req, res) => {
   }
 };
 
-module.exports = { 
+const APIController = { 
     addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend // added getUserNames as an export
-}
+};
+export default APIController;

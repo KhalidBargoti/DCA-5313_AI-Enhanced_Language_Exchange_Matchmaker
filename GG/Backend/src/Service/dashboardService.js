@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let handleUserDashBoard = (id) => {
     return new Promise(async (resolve, reject) => {
@@ -42,4 +42,5 @@ let handleUserDashBoard = (id) => {
     });
 };
 
-module.exports = { handleUserDashBoard };
+const dashboardService = { handleUserDashBoard };
+export default dashboardService;

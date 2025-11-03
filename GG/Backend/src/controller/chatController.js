@@ -1,5 +1,5 @@
-import ChatModel from'../models/ChatModel';
-import chatService from'../Service/chatService';
+import ChatModel from'../models/ChatModel.js';
+import chatService from'../Service/chatService.js';
 let createChat = async (req, res) => {
     let senderId = req.body.senderId;
     let receiverId = req.body.receiverId;
@@ -30,8 +30,9 @@ let findChat = async (req, res) => {
 }
 
 
-module.exports = {
+const chatController = {
     createChat: createChat,
     findChats: findChats,
     findChat: findChat
-}
+};
+export default chatController;

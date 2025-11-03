@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let checkFriends = (user_native, user_target, user_id) => {
     return new Promise (async (resolve, reject) => {
@@ -57,7 +57,8 @@ let checkFriends = (user_native, user_target, user_id) => {
 
 
 
-module.exports = {checkFriends}
+const matchingService = {checkFriends};
+export default matchingService;
 
 //above code will return all instances
 

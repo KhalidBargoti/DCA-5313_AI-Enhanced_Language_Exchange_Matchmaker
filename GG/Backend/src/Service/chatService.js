@@ -1,5 +1,5 @@
-import db from '../models/index';
-const { Op } = require("sequelize");
+import db from '../models/index.js';
+import { Op } from "sequelize";
 
 let handleChatModel = (senderId, receiverId) => {
     return new Promise(async (resolve, reject) => {
@@ -69,6 +69,7 @@ let handleFindChat = (senderId, receiverId) => {
 
 
 
-module.exports = {handleChatModel : handleChatModel,
+const chatService = {handleChatModel : handleChatModel,
  handleFindChats : handleFindChats,
- handleFindChat : handleFindChat}
+ handleFindChat : handleFindChat};
+ export default chatService;
