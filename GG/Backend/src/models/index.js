@@ -29,7 +29,7 @@ const files = fs
   .filter(file => file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js');
 
 for (const file of files) {
-  const modelModule = await import(path.join(__dirname, file));
+  const modelModule = await import(pathToFileURL(path.join(__dirname, file)));
   const model = modelModule.default(sequelize, Sequelize.DataTypes);
   db[model.name] = model;
 }
