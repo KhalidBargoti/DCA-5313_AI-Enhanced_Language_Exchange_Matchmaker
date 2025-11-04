@@ -14,10 +14,17 @@ export default (sequelize, DataTypes) => {
   };
   ChatModel.init({
     senderId: DataTypes.STRING,
-    receiverId: DataTypes.STRING
+    receiverId: DataTypes.STRING,
+
+    aiAccessAllowed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    }
   }, {
     sequelize,
     modelName: 'ChatModel',
+    tableName: 'ChatModel'
   });
 
   return ChatModel;
