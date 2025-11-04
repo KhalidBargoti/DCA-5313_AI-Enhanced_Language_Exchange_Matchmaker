@@ -4,8 +4,8 @@ import interestController from "../controller/interestController.js";
 import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
-import chatController from "../controller/chatController";
-import * as assistantController from "../controller/assistantController";
+import chatController from "../controller/chatController.js";
+import * as assistantController from "../controller/assistantController.js";
 
 
 let router = express.Router();

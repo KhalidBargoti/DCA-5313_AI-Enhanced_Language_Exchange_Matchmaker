@@ -1,5 +1,5 @@
-import messageService from '../Service/messageService';
-import { assertParticipant, assertAIAllowed } from '../Service/privacyService';
+import messageService from '../Service/messageService.js';
+import { assertParticipant, assertAIAllowed } from '../Service/privacyService.js';
 
 // POST /api/assistant/parse/:chatId  { userId }
 export async function parseConversation(req, res) {
