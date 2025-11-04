@@ -1,5 +1,5 @@
 import db from '../models/index';
-const { Op } = require('sequelize');
+import { Op } from 'sequelize';
 
 /**
  * Ensures a user is a participant of chatId.
