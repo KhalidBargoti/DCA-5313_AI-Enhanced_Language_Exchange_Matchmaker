@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import "./PrivacyToggle.css";
 
-const API_BASE = process.env.REACT_APP_API_BASE || ""; // e.g. http://localhost:3001/api (Option B) or "" if using proxy (Option A)
-
-async function safeJson(res) {
-  const text = await res.text();
-  try { return JSON.parse(text); } catch { throw new Error(text.slice(0,120) || "Non-JSON response"); }
+async function asJson(res) {
+  const txt = await res.text();
+  try { return JSON.parse(txt); } catch { throw new Error(txt.slice(0,120) || "Non-JSON response"); }
 }
 
 export default function PrivacyToggle({ chatId, userId, className = "" }) {
@@ -19,14 +17,14 @@ export default function PrivacyToggle({ chatId, userId, className = "" }) {
     (async () => {
       setErr("");
       try {
-        const r = await fetch(`${API_BASE}/chats/${chatId}`, { credentials: "include" });
-        if (!r.ok) throw new Error(`GET ${r.status}`);
-        const j = await safeJson(r);
+        const res = await fetch(`/api/v1/chats/${chatId}`, { credentials: "include" });
+        if (!res.ok) throw new Error(`GET ${res.status}`);
+        const j = await asJson(res);
         if (!ignore) setAllowed(Boolean(j?.data?.aiAccessAllowed ?? true));
       } catch (e) {
         if (!ignore) {
           setErr(e.message || "Could not load privacy");
-          setAllowed(false); // default display
+          setAllowed(false);
         }
       }
     })();
@@ -38,22 +36,21 @@ export default function PrivacyToggle({ chatId, userId, className = "" }) {
     const next = !allowed;
     setLoading(true);
     setErr("");
-    setAllowed(next); // optimistic
+    setAllowed(next); // optimistic UI
     try {
-      const r = await fetch(`${API_BASE}/chats/${chatId}/privacy`, {
+      const res = await fetch(`/api/v1/chats/${chatId}/privacy`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ userId, aiAccessAllowed: next })
       });
-      if (!r.ok) {
-        // try to read JSON, fallback to text
-        let msg = `PUT ${r.status}`;
-        try { const j = await r.json(); msg = j?.message || msg; } catch {}
+      if (!res.ok) {
+        let msg = `PUT ${res.status}`;
+        try { const j = await res.json(); msg = j?.message || msg; } catch {}
         throw new Error(msg);
       }
     } catch (e) {
-      setAllowed(!next); // revert
+      setAllowed(!next); // revert on failure
       setErr(e.message || "Update failed");
     } finally {
       setLoading(false);
@@ -70,7 +67,7 @@ export default function PrivacyToggle({ chatId, userId, className = "" }) {
         disabled={allowed === null || loading || !chatId}
         aria-pressed={!!allowed}
         title={chatId ? label : "No chat selected"}
-        aria-label="Toggle AI access for this conversation"
+        aria-label="Toggle AI access"
       >
         <span className="pt-knob" />
       </button>

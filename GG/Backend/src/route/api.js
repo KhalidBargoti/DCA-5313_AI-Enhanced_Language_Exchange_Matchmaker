@@ -6,7 +6,7 @@ import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
-
+import db from "../models";
 
 let router = express.Router();
 
@@ -44,7 +44,40 @@ const initAPIRoute = (app) => {
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
 
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
+    
+    router.get('/chats/:chatId', async (req, res) => {
+    try {
+        const chat = await db.ChatModel.findByPk(req.params.chatId, {
+        attributes: ['id', 'senderId', 'receiverId', 'aiAccessAllowed']
+        });
+        if (!chat) return res.status(404).json({ message: 'Chat not found' });
+        return res.json({ data: chat });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Server error' });
+    }
+    });
 
+    router.put('/chats/:chatId/privacy', async (req, res) => {
+    try {
+        const { userId, aiAccessAllowed } = req.body;
+        const chat = await db.ChatModel.findByPk(req.params.chatId);
+        if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+        // Optional safety: only participants may toggle
+        if (userId && ![String(chat.senderId), String(chat.receiverId)].includes(String(userId))) {
+        return res.status(403).json({ message: 'Forbidden: not a participant' });
+        }
+
+        chat.aiAccessAllowed = !!aiAccessAllowed;
+        await chat.save();
+        return res.json({ message: 'ok', data: { aiAccessAllowed: chat.aiAccessAllowed } });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ message: 'Server error' });
+    }
+    });
+    
     return app.use('/api/v1/', router)
 }
 
