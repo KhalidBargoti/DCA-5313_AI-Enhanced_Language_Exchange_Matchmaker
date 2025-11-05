@@ -6,7 +6,7 @@ import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
-import db from "../models";
+import db from "../models/index.js";
 
 let router = express.Router();
 
@@ -77,7 +77,7 @@ const initAPIRoute = (app) => {
         return res.status(500).json({ message: 'Server error' });
     }
     });
-    
+
     return app.use('/api/v1/', router)
 }
 
