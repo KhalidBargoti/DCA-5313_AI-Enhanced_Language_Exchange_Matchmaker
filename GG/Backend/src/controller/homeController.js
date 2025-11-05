@@ -83,7 +83,8 @@ let getHomePage = async(req, res) => {
 //
 //}
 
-module.exports = {
+const homeController = {
     getHomePage : getHomePage
 //    , getDetailPage, createNewUser, deleteUser, getEditPage, postUpdateUser, getUploadFilePage, handleUploadFile
-}
+};
+export default homeController;

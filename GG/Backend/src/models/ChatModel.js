@@ -1,8 +1,6 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
+import { Model } from 'sequelize';
+
+export default (sequelize, DataTypes) => {
   class ChatModel extends Model {
     /**
      * Helper method for defining associations.
@@ -16,10 +14,17 @@ module.exports = (sequelize, DataTypes) => {
   };
   ChatModel.init({
     senderId: DataTypes.STRING,
-    receiverId: DataTypes.STRING
+    receiverId: DataTypes.STRING,
+
+    aiAccessAllowed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    }
   }, {
     sequelize,
     modelName: 'ChatModel',
+    tableName: 'ChatModel'
   });
 
   return ChatModel;

@@ -1,4 +1,4 @@
-import interestService from '../Service/interestService';
+import interestService from '../Service/interestService.js';
 
 let listInterests = async (req, res) => {
     try {
@@ -20,6 +20,7 @@ let createInterest = async (req, res) => {
     }
 }
 
-module.exports = { listInterests, createInterest }
+const interestController = { listInterests, createInterest };
+export default interestController;
 
 

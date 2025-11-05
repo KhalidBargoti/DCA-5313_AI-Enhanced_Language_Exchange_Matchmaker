@@ -1,5 +1,5 @@
-import matchingService from '../Service/matchingService';
-import userService from '../Service/userService';
+import matchingService from '../Service/matchingService.js';
+import userService from '../Service/userService.js';
 
  let handleMatchingFriends = async (req, res) => {
     console.log("Check B")
@@ -63,8 +63,9 @@ let handleGetUserFirstName = async (req, res) => {
 
 
 
-module.exports = {
+const matchingController = {
   handleMatchingFriends: handleMatchingFriends,
   handleGetUser: handleGetUser,
   handleGetUserFirstName: handleGetUserFirstName
-}
+};
+export default matchingController;

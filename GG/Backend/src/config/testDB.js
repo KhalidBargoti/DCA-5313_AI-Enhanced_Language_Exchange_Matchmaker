@@ -1,6 +1,6 @@
 // a test to make sure that connection to mysql was stable
 
-const mysql = require('mysql2/promise'); // uses the promise package in mysql2 library to access database
+import mysql from 'mysql2/promise'; // uses the promise package in mysql2 library to access database
 
 const testDB = async () => {
   const connection = await mysql.createConnection({

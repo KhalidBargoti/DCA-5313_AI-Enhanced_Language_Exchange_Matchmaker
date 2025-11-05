@@ -1,4 +1,4 @@
-import userService from '../Service/userService';
+import userService from '../Service/userService.js';
 
 let currUser = null
 
@@ -176,7 +176,7 @@ let handleLogout = async (req, res) => {
     }
 }
 
-module.exports = {
+const userController = {
     handleLogin: handleLogin,
     handleRegister: handleRegister,
     handleProfileCreation: handleProfileCreation,
@@ -186,4 +186,5 @@ module.exports = {
     handleGetProfile : handleGetProfile,
     handleDataPopulation : handleDataPopulation,
     handleLogout : handleLogout
-}
+};
+export default userController;

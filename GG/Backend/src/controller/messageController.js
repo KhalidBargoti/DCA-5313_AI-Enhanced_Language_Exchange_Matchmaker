@@ -1,5 +1,5 @@
-import MessageModel from'../models/MessageModel';
-import messageService from'../Service/messageService';
+import MessageModel from'../models/MessageModel.js';
+import messageService from'../Service/messageService.js';
 let addMessage = async (req, res) => {
     let chatId = req.body.chatId;
     let senderId = req.body.senderId;
@@ -30,8 +30,9 @@ let findMessages = async (req, res) => {
     })
 }
 
-module.exports = {
+const messageController = {
     addMessage: addMessage,
     findMessage: findMessage,
     findMessages: findMessages
-}
+};
+export default messageController;

@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let listInterests = () => {
     return new Promise(async (resolve, reject) => {
@@ -22,6 +22,7 @@ let createInterest = (interest_name) => {
     })
 }
 
-module.exports = { listInterests, createInterest }
+const interestService = { listInterests, createInterest };
+export default interestService;
 
 

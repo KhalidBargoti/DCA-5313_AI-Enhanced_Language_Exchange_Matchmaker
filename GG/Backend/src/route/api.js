@@ -1,9 +1,12 @@
 import express from "express";
-import APIController from "../controller/APIController";
-import interestController from "../controller/interestController";
-import userInterestController from "../controller/userInterestController";
-import availabilityController from "../controller/availabilityController";
+import APIController from "../controller/APIController.js";
+import interestController from "../controller/interestController.js";
+import userInterestController from "../controller/userInterestController.js";
+import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
+import chatController from "../controller/chatController.js";
+import * as assistantController from "../controller/assistantController.js";
+
 
 let router = express.Router();
 
@@ -42,7 +45,10 @@ const initAPIRoute = (app) => {
     router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
     router.put('/users/:userId/availability', availabilityController.replaceAvailability);
 
-  
+    router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
+
+    router.post('/assistant/parse/:chatId', assistantController.parseConversation);
+
     return app.use('/api/v1/', router)
 }
 
