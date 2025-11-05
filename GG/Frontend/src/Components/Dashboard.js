@@ -82,8 +82,14 @@ export default function Dashboard() {
           <button className="btn-action" onClick={() => goToPage("FriendsList")}>
             Friends List
           </button>
-          <button className="btn-action" onClick={() => goToPage("Videocall")}>
-            Call
+          <button
+            className="btn-action"
+            onClick={() => {
+              const chatId = localStorage.getItem("currentChatId") || "1"; // pick real chat id if you have it
+              goToPage("Videocall", { chatId });
+              }}
+            >
+              Call
           </button>
           <button className="btn-action" onClick={() => goToPage("Translator")}>
             Translator
