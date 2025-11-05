@@ -1,144 +1,184 @@
+/* ===== Layout ===== */
 .dashboard-container {
   display: flex;
-  height: 100vh;
-  background-color: white;
+  min-height: 100vh;
+  background: #ffffff;
 }
 
-.dashboard-left {
-  width: 20%;
-  background-color: #364659; /* Replace with $dark-color from Login.scss */
-  color: white; /* Ensure text is readable on the dark background */
-  padding: 20px;
+/* Left column (matches <div class="sidebar"> in Dashboard.js) */
+.sidebar {
+  width: 260px;
+  background-color: #364659;
+  color: #ffffff;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
 }
 
-.dashboard-left-buttons {
-  width: 100%; /* Ensure the button group spans the container */
+.dashboard-title {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* Profile block */
+.profile-section {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Space between the buttons */
   align-items: center;
+  margin-bottom: 16px;
 }
 
-.dashboard-right {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 buttons per row */
-  grid-gap: 25px; /* Increased spacing between buttons */
-  width: 80%;
-  margin: auto;
-  justify-items: center; /* Center grid items */
-  align-items: center;
-  animation: fadeIn 0.5s ease-in;
+.profile-image {
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #e5e7eb;
+  display: block;
 }
 
-.user-info {
-  margin-top: 20px;
+.user-name {
+  margin: 14px 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
   text-align: center;
 }
 
-.btn-questions, .btn-logout {
-  width: 100%; /* Adjust width for alignment */
-  font-size: 16px;
-  margin: 8px;;
-  font-weight: bold;
-  color: white;
+.user-email {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #d1d5db;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* Sidebar buttons */
+.sidebar-buttons {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-secondary {
+  width: 120px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #6344A6;
   border: none;
   border-radius: 8px;
-  background-color: #6344A6;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: all 0.3s ease;
-      
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.3);
-  }
-
-  &:active {
-    background-color: lighten(#6344A6, 10%);
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
 
-.btn-questions:hover,
-.btn-logout:hover {
-  background-color: #7a56c8;
-  transform: scale(1.05);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+.btn-secondary:hover {
+  background-color: #7a56c8; /* lighter purple */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.15);
 }
 
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+}
+
+/* Right content area (matches <div class="main-content">) */
+.main-content {
+  flex: 1;
+  padding: 40px 28px;
+  overflow: auto;
+}
+
+/* ===== The Grid (matches <div class="button-grid">) ===== */
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 40px;
+  place-items: center; /* centers the tiles without affecting their size */
+}
+
+/* Tile buttons (matches className="btn-action") */
 .btn-action {
-  width: 350px; /* Square button dimensions */
+  width: 350px;
   height: 350px;
-  border-radius: 15px; /* Slightly rounded corners */
+  border-radius: 15px;
   border: none;
-  color: white;
-  background-color: #6344A6; /* Solid purple */
-  font-size: 40px; /* Adjust text size */
+  color: #ffffff;
+  background-color: #6344A6;
+  font-size: 40px;
+  font-weight: 700;
   text-align: center;
   cursor: pointer;
-  display: flex; /* Center text inside the button */
-  align-items: center; /* Vertical alignment */
-  justify-content: center; /* Horizontal alignment */
-
-  &:hover {
-    background-color: darken(#6344A6, 10%);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.3);
-  }
-
-  &:active {
-    background-color: lighten(#6344A6, 10%);
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
 
+.btn-action:hover {
+  background-color: #563a90; /* “darken” equivalent */
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.12);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.12);
+}
+
+/* If you had a full-width row somewhere */
 .ai-placeholder {
   grid-column: span 3;
 }
 
+/* ===== Animations (if you used them previously) ===== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Responsive breakpoints ===== */
+@media (max-width: 1200px) {
+  .button-grid {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 32px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .btn-action {
+    width: 320px;
+    height: 320px;
+    font-size: 34px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .dashboard-container {
     flex-direction: column;
   }
-
-  .dashboard-left,
-  .dashboard-right {
+  .sidebar {
     width: 100%;
-    box-shadow: none;
+    flex-direction: column;
   }
-
-  .dashboard-right {
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 20px;
+  .main-content {
+    padding: 24px 16px;
   }
-
+  .button-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
   .btn-action {
-    width: 150px;
-    height: 150px;
-    font-size: 20px;
+    width: 100%;
+    max-width: 420px;
+    height: 220px;
+    font-size: 28px;
   }
-
-
 }

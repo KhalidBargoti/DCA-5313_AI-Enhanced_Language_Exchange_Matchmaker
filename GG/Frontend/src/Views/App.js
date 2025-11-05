@@ -22,6 +22,7 @@ import FriendSearch from '../Components/FriendSearch';
 import FriendsList from '../Components/FriendsList';
 import UserReport from '../Components/UserReport';
 import AvailabilityPicker from '../Components/AvailabilityPicker';
+import AIAssistant from "../Components/AIAssistant";
 
 const App = () => {
 
@@ -41,6 +42,7 @@ const App = () => {
           <Route path ="/Translator" element = {<Translator />}/>
           <Route path="/UserReport" element={<UserReport />} />
           <Route path ="/Videocall" element = {<Videocall />}/>
+          <Route path="/AIAssistant" element={<AIAssistant />} />
           <Route path ="/PostVideocall" element = {<PostVideocall />}/>
           <Route path ="/LogoutConfirmation" element ={<LogoutConfirmationPage />}/>
           <Route path ="/Chat" element ={<Chat/>}/>

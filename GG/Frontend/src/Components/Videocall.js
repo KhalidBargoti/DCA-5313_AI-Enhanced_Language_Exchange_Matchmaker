@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import React from "react";
 import './Videocall.css';
-import { VideoRoom, client } from './VideoRoom';
-import Button from 'react-bootstrap/Button';
+import { VideoRoom } from './VideoRoom';
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
+import PrivacyToggle from "./PrivacyToggle";
 
 function Videocall() {
     const [joined, setJoined] = useState();
@@ -13,42 +13,34 @@ function Videocall() {
     const [search] = useSearchParams();
     const id = search.get("id");
 
-    const handleBack = async (e) => {
+    // Read chatId for privacy toggle (optional but recommended)
+    const chatId = new URLSearchParams(window.location.search).get("chatId") || "";
+    const userId = localStorage.getItem("userId") || sessionStorage.getItem("userId") || "";
+
+    const handleBack = async () => {
         if (!joined) {
             navigate({
                 pathname: "/Dashboard",
-                search: createSearchParams({
-                    id: id
-                }).toString()
+                search: createSearchParams({ id }).toString()
             });
-            console.log("to dashboard from call");
         } else {
             navigate({
                 pathname: "/PostVideocall",
-                search: createSearchParams({
-                    id: id
-                }).toString()
+                search: createSearchParams({ id }).toString()
             });
-            console.log("to post call page from call");
         }
-    }
-
-    const handleRoom = (e) => {
-        setRoom(e.target.value);
     };
 
-    function addParticipantToLocalStorage(participantId, roomName) {
-        // Retrieve current data from local storage
-        let participants = JSON.parse(localStorage.getItem('participantData')) || {};
+    const handleRoom = (e) => setRoom(e.target.value);
 
-        // Add or update participant's room information
+    const addParticipantToLocalStorage = (participantId, roomName) => {
+        const participants = JSON.parse(localStorage.getItem('participantData')) || {};
         participants[participantId] = roomName;
         localStorage.setItem('participantData', JSON.stringify(participants));
-    }
+    };
 
     const handleJoinRoom = () => {
-        const selectedRoom = room.trim() || 'matchmaking'; // Default to 'matchmaking' if no input
-        console.log("Selected Room:", selectedRoom);
+        const selectedRoom = room.trim() || 'matchmaking';
         setRoom(selectedRoom);
         addParticipantToLocalStorage(id, selectedRoom);
         setJoined(true);
@@ -58,25 +50,32 @@ function Videocall() {
         <div className="screen-Background">
             <div className="call-container">
                 <div className="screen-Content">
-                    <h1>Video Call</h1>
+                    {/* header row with toggle; keeps original look */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between", marginBottom:12}}>
+                        <h1>Video Call</h1>
+                        <PrivacyToggle chatId={chatId} userId={userId} />
+                    </div>
+
                     {!joined && (
                         <>
                             <div className="screen-Content">
                                 <h5>Enter Room Number 1-4</h5>
                                 <input
                                     placeholder="Enter"
-                                    onChange={handleRoom} className="input"
-                                    type="text" />
+                                    onChange={handleRoom}
+                                    className="input"
+                                    type="text"
+                                />
                             </div>
                             <button className='btn-back-02' onClick={handleJoinRoom}>
                                 Join Room
                             </button>
-                            <button className="btn-back-02" onClick={handleBack} >back</button>
+                            <button className="btn-back-02" onClick={handleBack}>back</button>
                         </>
                     )}
+
                     {joined && <VideoRoom room={room} />}
                 </div>
-                
             </div>
         </div>
     );

@@ -3,223 +3,108 @@ import React from "react";
 import './Dashboard.css';
 import profile from "../Styles/profilepic.jpg";
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
-import { handleUserDashBoardApi } from '../Services/dashboardService';
-import { handleFindFriendsApi, handleCreateFriendsApi } from '../Services/findFriendsService';
-import { handleGetProfile, handleGetUser, handleMatch } from '../Services/userService';
-import { setUserData } from '../Utils/userData';
+// ✅ use the functions that actually exist in Services/userService
+import { handleGetUser, handleUserLogout } from "../Services/userService";
 
-function Dashboard()  {
-  const [search] = useSearchParams();
-  const id = search.get("id");
-  const [FName, setFName] = useState();
-  const [LName, setLName] = useState();
-  const [email, setEmail] = useState();
-  const [age, setAge] = useState();
-  const [gender, setGender] = useState();
-  const [hobby, setHobby] = useState();
-  const [profession, setProfession] = useState();
-  const [friendids, setfriendids] = useState([]);
-  const [name, setName] = useState([]);
+export default function Dashboard() {
+  const [userInfo, setUserInfo] = useState({});
   const navigate = useNavigate();
-  
-  let names = []; 
-  let array = [];
-  let videoCalls = [];
-  let data;
-
-  const getInfo = async () => {
-    try {
-      data = await handleUserDashBoardApi(id);
-      setFName(data.user.firstName);
-      setLName(data.user.lastName);
-      setEmail(data.user.email);
-      setAge(data.user.age);
-      setGender(data.user.gender);
-      setHobby(data.user.hobby);
-      setProfession(data.user.profession);
-
-      // Store data for access in other components
-      setUserData({
-        firstName: data.user.firstName,
-        lastName: data.user.lastName,
-        email: data.user.email,
-        age: data.user.age,
-        gender: data.user.gender,
-        hobby: data.user.hobby,
-        profession: data.user.profession,
-      });
-
-      let lists = await handleFindFriendsApi(id);
-      setfriendids(lists.chatsData);
-
-      for(let i = 0; i < friendids.length; i++) {
-        let friend = await handleUserDashBoardApi(friendids[i].user2_ID);
-        let friendName = friend.user.firstName + ' ' + friend.user.lastName;
-        names.push(friendName);
-      }
-      setName(names);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const setup = () => {
-    for(let i = 0; i < friendids.length; i++) {
-      console.log('name-i ' + name[i].name);
-      console.log('logged in ' + name[i].loggedIn);
-      if (name[i].loggedIn) {
-        array.push(
-          <div className='leftOnline'>
-            <img src={profile} alt="DP" className="leftpic" />
-            <text className='text'>{name[i]}</text>
-          </div>
-        );
-      } else {
-        array.push(
-          <div className='leftOffline'>
-            <img src={profile} alt="DP" className="leftpic" />
-            <text className='text'>{name[i]}</text>
-          </div>
-        );
-      }
-    }
-  };
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id");
 
   useEffect(() => {
-    getInfo();
-  }, []);
-
-  const Logout = async (e) => {
-    navigate({
-      pathname: "/LogoutConfirmation",
-      search: createSearchParams({
-          id: id
-      }).toString()
-    });
-  };
-
-  const Translator = async (e) => {
-    navigate({
-      pathname: "/Translator",
-      search: createSearchParams({
-          id: id
-      }).toString()
-    });
-  };
-
-  const call = async (e) => {
-    navigate({
-      pathname: "/Videocall",
-      search: createSearchParams({
-          id: id
-      }).toString()
-    });
-  };
-
-  const handleChat = async (e) => {
-    navigate({
-      pathname: "/Chat",
-      search: createSearchParams({
-          senderid: id
-      }).toString()
-    });
-  };
-
-  const goToUserReport = () => {
-    navigate({
-      pathname: "/UserReport", 
-      search: createSearchParams({
-        id: id, 
-      }).toString(),
-    });
-  };
-
-  const friendSearch = () => {
-    navigate({
-      pathname: "/FriendSearch",
-      search: createSearchParams({
-        id: id,
-      }).toString(),
-    });
-  };
-
-  const createVideoCall = () => {
-    var channelId = Math.floor(10000 + Math.random() * 90000);
-    for (let vc in videoCalls) {
-      if (vc.user !== id) {
-        videoCalls.push({
-          user: id,
-          channel: channelId
-        });
+    let ignore = false;
+    async function loadUser() {
+      try {
+        // handleGetUser is exported by your service
+        const res = await handleGetUser(id);
+        // Be defensive about the response shape
+        const data = res?.data ?? res ?? {};
+        if (!ignore) setUserInfo(data);
+      } catch (err) {
+        console.error("Error fetching user info:", err);
       }
     }
-    call();
-  };
+    if (id) loadUser();
+    return () => { ignore = true; };
+  }, [id]);
 
-  const addFriend1 = async (e) => {
-    try {
-      console.log('friend add attempt');
-      let data = await handleCreateFriendsApi(id, friendids[0].id);
-    } catch(err) {
-      console.log(err);
-    }
-  };
-
-  const handleHelp = async (e) => {
+  const goToPage = (path, extraParams = {}) => {
     navigate({
-      pathname: "/HelpPage",
+      pathname: `/${path}`,
       search: createSearchParams({
-          id: id
-      }).toString()
+        id: id,
+        ...extraParams,
+      }).toString(),
     });
   };
 
-  for(let i = 0; i < friendids.length; i++) {
-    array.push(
-      <div className='left'>
-        <img src={profile} alt="DP" className="leftpic" />
-        <text className='text'>{name[i]}</text>
-        <button onClick={createVideoCall}>📞</button>
-      </div>
-    );
-  }
+  const handleLogout = async () => {
+    try {
+      // handleUserLogout is exported by your service
+      // If your implementation needs params, pass id; otherwise it will be ignored.
+      await handleUserLogout(id);
+      navigate("/LogoutConfirmation");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // still navigate away so the button isn't a dead-end if the API is flaky
+      navigate("/LogoutConfirmation");
+    }
+  };
 
   return (
     <div className="dashboard-container">
-
-      <div className="dashboard-left">
-        <h1>Dashboard</h1>
-        <img src={profile} alt="logo" className="center" />
-        <h1>{FName} {LName}</h1>
-        <h2>{email}</h2>
-        <div classname="dashboard-left-buttons">
-          <button className="btn-questions" onClick={handleHelp}>?</button>
-          <button className="btn-logout" onClick={Logout}>Logout</button>
+      <div className="sidebar">
+        <h2 className="dashboard-title">Dashboard</h2>
+        <div className="profile-section">
+          <img src={profile} alt="Profile" className="profile-image" />
+          <h3 className="user-name">{userInfo.name || `${userInfo.firstName ?? ""} ${userInfo.lastName ?? ""}`.trim() || "User"}</h3>
+          <p className="user-email">{userInfo.email || userInfo.userEmail || ""}</p>
+        </div>
+        <div className="sidebar-buttons">
+          <button className="btn-secondary" onClick={() => goToPage("HelpPage")}>
+            ?
+          </button>
+          <button className="btn-secondary" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
 
-      <div className="dashboard-right">
-      <button className="btn-action" onClick={() => navigate({
-                pathname: "/UpdateProfile",
-                search: createSearchParams({ id: id }).toString()
-              })}>
-              Set Profile
+      <div className="main-content">
+        <div className="button-grid">
+          <button className="btn-action" onClick={() => goToPage("CreateProfile")}>
+            Set Profile
           </button>
-        <button className="btn-action" onClick={friendSearch}>Find Friend</button>
-          <button className="btn-action" onClick={() => navigate({
-                pathname: "/FriendsList",
-                search: createSearchParams({ id: id }).toString()
-              })}>
-              Friends List
+          <button className="btn-action" onClick={() => goToPage("FindFriend")}>
+            Find Friend
           </button>
-          <button className="btn-action" onClick={call}>Call</button>
-          <button className="btn-action" onClick={Translator}>Translator</button>
-          <button className="btn-action" onClick={goToUserReport}>User Report</button>
-          <button className="btn-action" disabled>AI Coming Soon</button>
-      </div>
+          <button className="btn-action" onClick={() => goToPage("FriendsList")}>
+            Friends List
+          </button>
+          <button className="btn-action" onClick={() => goToPage("Videocall")}>
+            Call
+          </button>
+          <button className="btn-action" onClick={() => goToPage("Translator")}>
+            Translator
+          </button>
+          <button className="btn-action" onClick={() => goToPage("UserReport")}>
+            User Report
+          </button>
 
+          {/* Open the AI Assistant; pass chatId if you have one */}
+          <button
+            className="btn-action"
+            onClick={() => {
+              // Prefer your router helper so we keep the same layout/state and the `id` param.
+              const chatId = localStorage.getItem("currentChatId") || "1"; // fallback so the toggle is visible
+              goToPage("AIAssistant", { chatId });
+            }}
+          >
+            Chat Assistant
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default Dashboard;
