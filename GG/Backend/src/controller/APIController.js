@@ -365,8 +365,8 @@ let removeTrueFriend = async (req, res) => {
 
     const sql = `
       DELETE FROM friendsmodel
-      WHERE (user_one_id = ? AND user_two_id = ?)
-         OR (user_one_id = ? AND user_two_id = ?)
+      WHERE (user1_id = ? AND user2_id = ?)
+         OR (user1_id = ? AND user2_id = ?)
     `;
     const [result] = await pool.execute(sql, [userId1, userId2, userId2, userId1]);
 
@@ -381,7 +381,38 @@ let removeTrueFriend = async (req, res) => {
   }
 };
 
+let getTrueFriendsList = async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.firstName, u.lastName, u.email
+      FROM friendsmodel f
+      JOIN useraccount u ON u.id = f.user2_ID
+      WHERE f.user1_ID = ?
+      UNION
+      SELECT u.id, u.firstName, u.lastName, u.email
+      FROM friendsmodel f
+      JOIN useraccount u ON u.id = f.user1_ID
+      WHERE f.user2_ID = ?
+      `,
+      [userId, userId]
+    );
+
+    // Convert BinaryRows → plain objects
+    const friends = rows.map(r => ({ ...r }));
+
+    console.log('Final plain friends list:', friends);
+    return res.status(200).json({ friendsList: friends });
+  } catch (err) {
+    console.error('Error retrieving friends:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 module.exports = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend  // added getUserNames as an export
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList  // added getUserNames as an export
 }
