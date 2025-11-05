@@ -53,7 +53,10 @@ function Videocall() {
                     {/* header row with toggle; keeps original look */}
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between", marginBottom:12}}>
                         <h1>Video Call</h1>
-                        <PrivacyToggle chatId={chatId} userId={userId} />
+                        <PrivacyToggle
+                            chatId={new URLSearchParams(window.location.search).get("chatId") || ""}
+                            userId={localStorage.getItem("userId") || sessionStorage.getItem("userId") || ""}
+                        />
                     </div>
 
                     {!joined && (
