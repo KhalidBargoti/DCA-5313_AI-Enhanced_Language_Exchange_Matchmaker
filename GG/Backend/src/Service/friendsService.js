@@ -30,7 +30,6 @@ let handleFindFriends = (user1_ID) => {
                     where: {user1_ID : user1_ID},
                     attributes: ['user2_ID']
             });
-            //console.log("friends"+ friendsModels)
             friendsData.errMessage = 'Friends found!';
             friendsData.data = friendsModels;
             resolve(friendsData);
