@@ -1,117 +1,95 @@
-/* Page wrapper */
-.post-videocall-wrapper{
+/* ensure no global green background leaks in */
+.App { background-color: #ffffff !important; }
+
+.post-videocall-wrapper {
   min-height: 100vh;
-  background: #f6f7fb;                 /* soft gray like your screenshot */
+  background: #ffffff;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 32px 16px;
+  padding-top: 48px;
+  padding-bottom: 40px;
 }
 
-/* Purple card */
-.post-card{
+.post-card {
   width: 100%;
-  max-width: 760px;                     /* keep the card a nice width */
-  background: #5b3caf;                  /* your purple */
+  max-width: 700px;
+  background: #5b3caf;
   color: #fff;
   border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.15);
-  padding: 28px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  padding: 28px 28px 22px;
 }
 
-/* Headline */
-.post-card h2{
+.post-card h2 {
   text-align: center;
   font-weight: 800;
-  margin: 0 0 18px 0;
+  margin-bottom: 18px;
 }
 
-/* Section spacing */
-.post-card .section + .section{
-  margin-top: 18px;
+.post-card label,
+.post-card p {
+  text-align: center;
 }
 
-/* Inputs inside purple card stay readable */
 .post-card input[type="text"],
 .post-card textarea,
-.post-card select{
+.post-card select {
   width: 100%;
   background: #fff;
   color: #111;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px 12px;
   outline: none;
 }
 
-/* Stars row spacing */
-.stars{
+.stars {
   display: flex;
-  gap: 14px;
-  align-items: center;
   justify-content: center;
-  margin: 8px 0 0;
-}
-
-/* Rating label */
-.rating-label{
-  text-align: center;
-  color: #f1eefc;
+  align-items: center;
+  gap: 14px;
   margin-top: 14px;
 }
 
-/* ========================= */
-/*  Buttons row (at bottom)  */
-/* ========================= */
+.rating-label {
+  text-align: center;
+  color: #f3efff;
+  margin-top: 12px;
+}
 
-/* the row is centered and constrained INSIDE the card */
-.buttons-container{
+/* centered, tight, equal buttons */
+.buttons-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
-  margin-top: 22px;
-  width: 100%;
-  max-width: 520px;                     /* << keeps them from stretching across the page */
-  margin-left: auto;
-  margin-right: auto;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-/* normalize any bootstrap/global .btn leak */
-.buttons-container .btn{
+.buttons-container .btn {
+  width: 140px;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0;                            /* kill stray margins that push “Back” down */
-  line-height: 1;
-  border: none;
-  border-radius: 12px;
-  height: 44px;
-  width: 160px;                         /* << identical, fixed width for all three */
-  font-weight: 700;
-  font-size: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,.12);
-  transition: transform .15s ease, background .15s ease;
+  margin: 0;
 }
 
-/* colors */
-.buttons-container .btn-back   { background: #6c757d; color: #fff; }
-.buttons-container .btn-submit { background: #0d6efd; color: #fff; }
-.buttons-container .btn-add-friend { background: #0d6efd; color: #fff; }
+.btn-back { background: #6c757d; color: #fff; }
+.btn-submit { background: #0d6efd; color: #fff; }
+.btn-add-friend { background: #0d6efd; color: #fff; }
 
-/* hover */
-.buttons-container .btn-back:hover      { background: #5f6b73; transform: translateY(-1px); }
-.buttons-container .btn-submit:hover,
-.buttons-container .btn-add-friend:hover{ background: #0b5ed7; transform: translateY(-1px); }
+.btn-back:hover { background: #5f6b73; }
+.btn-submit:hover,
+.btn-add-friend:hover { background: #0b5ed7; }
 
-/* mobile: stack evenly and still centered */
-@media (max-width: 600px){
-  .buttons-container{
-    flex-direction: column;
-    max-width: 200px;
-    gap: 10px;
-  }
-  .buttons-container .btn{
-    width: 100%;
-  }
+@media (max-width: 600px) {
+  .buttons-container { flex-direction: column; gap: 10px; }
+  .buttons-container .btn { width: 100%; }
 }

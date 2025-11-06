@@ -1,158 +1,112 @@
-.leftpic {
-  display: block;
-  margin-left: 0;
-  margin-right: 0;
-  width: 50px;
-  height: 55px;
-  float: left;
-}
-.text{
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 20px;
-  width: 30px;
-  height: 30px;
-  float: left;
-}
-
-.left {
-  background: linear-gradient(135deg, rgb(19, 206, 209) 0%, rgb(165, 136, 74) 100%);
-  display: flex;
-  margin-top: 20px;
-  flex-direction: row;
-  align-items: left;
-}
-
-iframe { display: none; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo { animation: App-logo-spin infinite 20s linear; }
-}
-
-.btn-chat{
-  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
-  width: 19%;
-  margin: 10px 0;
-  height: 35px;
-  border-radius: 15px;
-  outline: none;
-  border: none;
-  color: white;
-  float: center;
-}
-.btn-help{
-  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
-  width: 15%;
-  margin: 10px 0;
-  height: 35px;
-  border-radius: 15px;
-  outline: none;
-  border: none;
-  color: white;
-  float: right;
-}
-.btn-join {
-  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
-  width: 30%;
-  margin: 10px 0;
-  height: 40px;
-  border-radius: 15px;
-  outline: none;
-  border: none;
-  color: white;
-}
-
-.frientlist{
-  height: 200px;
-  overflow-y: scroll;
-}
-
-/* GLOBAL APP BACKGROUND — make white so it doesn't bleed through */
-.App {
-  text-align: center;
-  background-color: #fff;   /* was green */
-}
-
-.label{
-  display: block;
-  font-size: larger;
-  color: black;
-  padding: 5px;
-}
-
-.input{
-  font-size: larger;
-  padding: 5px;
-  margin: 2px;
-}
-
-.btn{
-  color: white;
-  border-radius: 5px;
-  font-size: larger;
-  display: block;
-  padding: 5px;
-  margin: 10px auto;
-}
-
-.messages { display: flex; justify-content: center; }
-
-.error{
-  display: block;
-  background-color: red;
-  color: white;
-  width: fit-content;
-  height: 45px;
-  padding: 5px;
-}
-
-.success{
-  display: block;
-  background-color: lightblue;
-  color: black;
-  width: fit-content;
-  height: 50px;
-  padding: 5px;
-}
-
-.call-container {
-  width: 30%;
-  height: 100%;
-  margin: 0 auto;
-  border-radius: 10px;
-  background-color: white;
-  padding: 15px;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 15px rgba(99, 68, 166, 0.5);
-}
-
-.card {
-  max-width: 33rem;
+/* Reset just what we need here to avoid spilling onto other pages */
+.video-call-container {
   background: #fff;
-  margin: 0 1rem;
-  padding: 1rem;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  border-radius: 0.5rem;
-}
-
-.stars { display: flex; gap: 0.5rem; }
-.star { font-size: 10vh; cursor: pointer; }
-.star.selected { color: gold; }
-
-/* --- Join Room page hardening (prevents any green strip) --- */
-.video-call-container { background: #fff !important; min-height: 100vh; }
-.video-call-container .body,
-.video-call-container .join {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
   position: relative;
 }
-.video-call-container .body::before,
-.video-call-container .body::after,
-.video-call-container .join::before,
-.video-call-container .join::after { content: none !important; }
+
+/* Home button placement */
+.vc-home-btn-wrap {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+}
+
+/* Card layout for a clean, intuitive join flow */
+.join-card {
+  width: 100%;
+  max-width: 560px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Headings */
+.join-title {
+  margin: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #232323;
+}
+
+.join-subtitle {
+  margin: -6px 0 0;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Form */
+.join-form {
+  display: grid;
+  gap: 8px;
+}
+
+.join-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.join-error {
+  color: #dc3545;
+  font-size: 13px;
+}
+
+/* Actions: evenly spaced, consistent sizing */
+.join-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.btn-cta,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
+}
+
+/* Primary action */
+.btn-cta {
+  background: #5b3caf;        /* your app purple */
+  color: #fff;
+}
+.btn-cta:hover {
+  background: #4d3393;
+  transform: translateY(-1px);
+}
+
+/* Secondary action */
+.btn-ghost {
+  background: #e9e9f3;
+  color: #2c2c34;
+}
+.btn-ghost:hover {
+  background: #dedff2;
+  transform: translateY(-1px);
+}
+
+/* Responsive stacking */
+@media (max-width: 560px) {
+  .join-actions {
+    grid-template-columns: 1fr;
+  }
+}

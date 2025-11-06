@@ -1,47 +1,57 @@
-import { useState, useEffect } from 'react';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './Videocall.css';
-import { VideoRoom, client } from './VideoRoom';
+import VideoRoom from './VideoRoom';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
-import { createSearchParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, createSearchParams } from 'react-router-dom';
 import { updateChatPrivacy } from '../Services/privacyService';
 
 function Videocall() {
+  const [room, setRoom] = useState('matchmaking');
+  const [roomTouched, setRoomTouched] = useState(false);
+
   const [joined, setJoined] = useState(false);
-  const [room, setRoom] = useState('');
-
-  const navigate = useNavigate();
-  const [search] = useSearchParams();
-  const id = search.get('id');         // current user id
-  const chatId = search.get('chatId'); // optional if launched from chat
-
-  // Privacy toggle modal
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [aiAllowed, setAiAllowed] = useState(true);
 
-  useEffect(() => {
-    setRoom('matchmaking');
-  }, []);
+  const navigate = useNavigate();
+  const [search] = useSearchParams();
+  const userId = search.get('id') || '';
+  const chatId = search.get('chatId') || '';
+  const roomFromQuery = search.get('room');
 
-  const handleJoinRoom = () => {
+  useEffect(() => {
+    if (roomFromQuery && roomFromQuery.trim()) {
+      setRoom(roomFromQuery.trim());
+    }
+  }, [roomFromQuery]);
+
+  const roomIsValid = room.trim().length > 0;
+  const roomHasError = roomTouched && !roomIsValid;
+
+  const handleJoinClick = () => {
+    setRoomTouched(true);
+    if (!roomIsValid) return;
     setShowPrivacyModal(true);
   };
 
-  const handleBack = () => {
-    navigate(-1);
+  const handleBack = () => navigate(-1);
+
+  const goHome = () => {
+    navigate({
+      pathname: '/Dashboard',
+      search: createSearchParams({ id: userId }).toString(),
+    });
   };
 
   const confirmAndJoin = async () => {
     try {
       if (chatId) {
-        await updateChatPrivacy(chatId, id, aiAllowed);
-      } else {
-        console.warn('[Videocall] No chatId — skipping privacy update API call.');
+        await updateChatPrivacy(chatId, userId, aiAllowed);
       }
-    } catch (e) {
-      console.error('Failed to update chat privacy', e);
+    } catch (err) {
+      console.error('Failed to update chat privacy before join:', err);
     } finally {
       setShowPrivacyModal(false);
       setJoined(true);
@@ -50,28 +60,49 @@ function Videocall() {
 
   return (
     <div className="video-call-container">
-      <div className="body">
-        <div className="join">
-          {!joined ? (
-            <>
-              <button className="btn-back-02" onClick={handleJoinRoom}>
-                Join Room
-              </button>
-              <button className="btn-back-02" onClick={handleBack}>
-                Back
-              </button>
-            </>
-          ) : (
-            <VideoRoom
-              room={room}
-              initialAiAllowed={aiAllowed}
-              chatId={chatId}
-              currentUserId={id}
-            />
-          )}
+      {/* Home button only visible BEFORE joining (prevents duplicate with VideoRoom top bar) */}
+      {!joined && (
+        <div className="vc-home-btn-wrap">
+          <Button variant="primary" size="sm" onClick={goHome}>🏠 Home</Button>
         </div>
-      </div>
+      )}
 
+      {!joined ? (
+        <div className="join-card">
+          <h2 className="join-title">Join a Video Room</h2>
+          <p className="join-subtitle">
+            Enter a room name or code. You’ll confirm AI access on the next step.
+          </p>
+
+          <div className="join-form">
+            <label htmlFor="room-input" className="join-label">Room name or code</label>
+            <Form.Control
+              id="room-input"
+              placeholder="e.g., spanish-101 or A3F9XZ"
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              onBlur={() => setRoomTouched(true)}
+            />
+            {roomHasError && (
+              <div className="join-error">Please enter a room name or code.</div>
+            )}
+          </div>
+
+          <div className="join-actions">
+            <button className="btn-cta" onClick={handleJoinClick}>Join Room</button>
+            <button className="btn-ghost" onClick={handleBack}>Back</button>
+          </div>
+        </div>
+      ) : (
+        <VideoRoom
+          room={room}
+          initialAiAllowed={aiAllowed}
+          chatId={chatId}
+          currentUserId={userId}
+        />
+      )}
+
+      {/* Pre-join AI privacy modal */}
       <Modal show={showPrivacyModal} onHide={() => setShowPrivacyModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>AI access for this video call</Modal.Title>
@@ -88,7 +119,7 @@ function Videocall() {
           <small>Your choice applies only to this conversation. You can change it during the call.</small>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="primary" onClick={confirmAndJoin}>
+          <Button variant="primary" onClick={confirmAndJoin} disabled={!roomIsValid}>
             Join
           </Button>
         </Modal.Footer>
