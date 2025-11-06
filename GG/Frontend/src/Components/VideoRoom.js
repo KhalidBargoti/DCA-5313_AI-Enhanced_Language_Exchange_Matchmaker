@@ -2,266 +2,211 @@ import React, { useEffect, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { VideoPlayer } from './VideoPlayer';
 import Button from 'react-bootstrap/Button';
-import { useNavigate, createSearchParams, useSearchParams } from "react-router-dom"; // Added useSearchParams
-import translate from 'translate';
+import { useNavigate, createSearchParams, useSearchParams } from 'react-router-dom';
 import './VideoRoom.css';
 
-const APP_ID = '50a71f096ba844e3be400dd9cf07e5d4';  // Your Agora APP_ID
-const TOKEN = '007eJxTYOhhrnb9uYLpTaDLQwkDQ9vpG38Ufpk68XDbtiXpGz59ZAtQYDA1SDQ3TDOwNEtKtDAxSTVOSjUxMEhJsUxOMzBPNU0xeRcalN4QyMjw7tlCFkYGCATxuRlyE0uSM3ITszPz0hkYALNiJKE=';
+const APP_ID = '50a71f096ba844e3be400dd9cf07e5d4';
+const TOKEN = 'YOUR_TOKEN_HERE'; // keep as configured
 const CHANNEL = 'matchmaking';
 
-const client = AgoraRTC.createClient({
-    mode: 'rtc',
-    codec: 'vp8',
+export const client = AgoraRTC.createClient({
+  mode: 'rtc',
+  codec: 'vp8',
 });
 
-export const VideoRoom = ({ room }) => {
-    const [users, setUsers] = useState([]);
-    const [localTracks, setLocalTracks] = useState([]);
-    const [mute, setMute] = useState(false);
-    const [hidden, setHidden] = useState(false);
-    const [inputText, setInputText] = useState(''); // For user text input
-    const [conversationText, setConversationText] = useState(''); // Stores translated conversation
-    const [isTranslating, setIsTranslating] = useState(false);
+export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId }) => {
+  const [users, setUsers] = useState([]);
+  const [localTracks, setLocalTracks] = useState([]);
+  const [muted, setMuted] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [aiAllowed, setAiAllowed] = useState(initialAiAllowed);
 
-    const navigate = useNavigate();
-    const [search] = useSearchParams(); // Added useSearchParams
-    const id = search.get("id"); // Extracted the user ID from the query parameters
+  const navigate = useNavigate();
+  const [search] = useSearchParams();
+  const id = search.get('id') || currentUserId;
 
-    const handleUserJoined = async (user, mediaType) => {
-        console.log("client.remoteUsers.length in handleUserJoined: ", client.remoteUsers.length);
+  // ======= AGORA setup =======
+  useEffect(() => {
+    let isMounted = true;
 
-        // Check the number of users before joining
-        if (client.remoteUsers.length >= 2) {
-            return;
-        }
-
+    const init = async () => {
+      client.on('user-published', async (user, mediaType) => {
         await client.subscribe(user, mediaType);
-
         if (mediaType === 'video') {
-            setUsers((previousUsers) => [...previousUsers, user]);
+          setUsers((prev) => {
+            if (prev.some((u) => u.uid === user.uid)) return prev;
+            return [...prev, user];
+          });
         }
+        if (mediaType === 'audio') user.audioTrack?.play();
+      });
 
-        if (mediaType === 'audio') {
-            user.audioTrack.play();
-        }
-    };
+      client.on('user-unpublished', (user, type) => {
+        if (type === 'audio') user.audioTrack?.stop?.();
+        setUsers((prev) => prev.filter((u) => u.uid !== user.uid));
+      });
 
-    const handleUserLeft = (user) => {
-        setUsers((previousUsers) =>
-            previousUsers.filter((u) => u.uid !== user.uid)
-        );
-        if (user.videoTrack) user.videoTrack.close();
-        if (user.audioTrack) user.audioTrack.close();
-    };
+      client.on('user-left', (user) => {
+        setUsers((prev) => prev.filter((u) => u.uid !== user.uid));
+      });
 
-    const handleMute = async () => {
-        setMute((prevMute) => {
-            const newMute = !prevMute; // Toggle the mute state
-            if (localTracks[0]) {
-                if (newMute) {
-                    client.unpublish(localTracks[0]).catch((error) => {
-                        console.error("Error unpublishing audio track:", error);
-                    });
-                } else {
-                    client.publish(localTracks[0]).catch((error) => {
-                        console.error("Error publishing audio track:", error);
-                    });
-                }
-            }
-            return newMute; // Update the state
+      const roomChannel = room || CHANNEL;
+      await client
+        .join(APP_ID, roomChannel, TOKEN, null)
+        .then((uid) => Promise.all([AgoraRTC.createMicrophoneAndCameraTracks(), uid]))
+        .then(([tracks, uid]) => {
+          const [audioTrack, videoTrack] = tracks;
+          if (!isMounted) return;
+          setLocalTracks(tracks);
+          setUsers((prev) => [...prev, { uid, videoTrack, audioTrack }]);
+          client.publish(tracks);
         });
     };
 
-    const toggleHideVideo = async () => {
-        if (!localTracks[1]) {
-            console.error("Video track not initialized");
-            return;
-        }
+    init();
 
-        const newHidden = !hidden;
-
-        if (newHidden) {
-            // Stop publishing the video track (remove it for other users)
-            await client.unpublish(localTracks[1]).catch((error) => {
-                console.error("Error unpublishing video track:", error);
-            });
-
-            // Remove this user from the `users` list
-            setUsers((prevUsers) => prevUsers.filter((user) => user.uid !== client.uid));
-        } else {
-            // Start publishing the video track (re-add it for other users)
-            await client.publish(localTracks[1]).catch((error) => {
-                console.error("Error publishing video track:", error);
-            });
-
-            // Re-add this user to the `users` list
-            setUsers((prevUsers) => [
-                ...prevUsers,
-                {
-                    uid: client.uid,
-                    videoTrack: localTracks[1],
-                    audioTrack: localTracks[0],
-                },
-            ]);
-        }
-
-        setHidden(newHidden); // Update the `hidden` state
-    };
-
-    const handleEndCall = () => {
-        // End call logic, if needed, such as stopping tracks or leaving the channel
-        for (let localTrack of localTracks) {
-            localTrack.stop();
-            localTrack.close();
-        }
-        client.unpublish().then(() => client.leave());
-
-        // Navigate to PostVideocall page with the user ID
-        navigate({
-            pathname: "/PostVideocall",
-            search: createSearchParams({
-                id: id // Pass the user ID from URL query parameters
-            }).toString()
-        });
-    };
-
-    const translateInput = async (text) => {
+    return () => {
+      isMounted = false;
+      for (let t of localTracks) {
         try {
-            setIsTranslating(true); // Indicate translation is in progress
-            const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text); // Check if text is Korean
-            const translatedText = isKorean
-                ? await translate(text, { to: "en", from: "ko" })
-                : await translate(text, { to: "ko", from: "en" });
-            setIsTranslating(false); // Reset translation state
-            return translatedText;
-        } catch (error) {
-            console.error("Translation failed:", error);
-            setIsTranslating(false); // Reset on error
-            return "Translation error. Please try again."; // Fallback message
-        }
+          t.stop();
+          t.close();
+        } catch {}
+      }
+      client.leave().catch(() => {});
+      setUsers([]);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const handleKeyPress = async (e) => {
-        if (e.key === 'Enter' && inputText.trim() !== '') {
-            const translatedText = await translateInput(inputText); // Translate user input
-            setConversationText((prevText) => prevText + (prevText ? '\n' : '') + translatedText); // Append to conversation
-            setInputText(''); // Clear the input field
-        }
-    };
+  // ======= Controls =======
+  const toggleMute = () => {
+    setMuted((prev) => {
+      const next = !prev;
+      localTracks[0]?.setEnabled(!next);
+      return next;
+    });
+  };
 
-    useEffect(() => {
-        const logElement = document.querySelector('.conversation-log');
-        if (logElement) {
-            logElement.scrollTop = logElement.scrollHeight;
-        }
-    }, [conversationText]);
+  const toggleHideVideo = () => {
+    const next = !hidden;
+    localTracks[1]?.setEnabled(!next);
+    setHidden(next);
+  };
 
-    useEffect(() => {
-        client.on('user-published', handleUserJoined);
-        client.on('user-left', handleUserLeft);
-        client.on('user-unpublished', (user, mediaType) => {
-            if (mediaType === 'video') {
-                setUsers((prevUsers) =>
-                    prevUsers.filter((u) => u.uid !== user.uid)
-                );
-            }
-        });
+  const toggleAiAccess = async () => {
+    const next = !aiAllowed;
+    setAiAllowed(next);
+    try {
+      if (chatId) {
+        const { updateChatPrivacy } = await import('../Services/privacyService');
+        await updateChatPrivacy(chatId, id ?? currentUserId, next);
+      } else {
+        console.warn('[VideoRoom] No chatId — privacy change is local only.');
+      }
+    } catch (err) {
+      console.error('Failed to update AI access', err);
+      setAiAllowed(!next);
+    }
+  };
 
-        var roomChannel = CHANNEL;
-        var roomToken = TOKEN;
+  const goHome = () => {
+    navigate({
+      pathname: '/Dashboard',
+      search: createSearchParams({ id: id }).toString(),
+    });
+  };
 
-        if (room === '1') {
-            roomChannel = 'Room A';
-            roomToken = '007eJxTYKhW6z5Y3NLkvujEnWMuei6XFp39osQi+F/MW3L5xewZTe0KDKYGieaGaQaWZkmJFiYmqcZJqSYGBikplslpBuappikmeg5B6Q2BjAxVO6RZGRkgEMRnYwjKz89VcGRgAACJBB8q';
-        } else if (room === '2') {
-            roomChannel = 'Room 2';
-            roomToken = '007eJxTYBA4Wzn1cYpx5YETbb1is2LnzG5cyFgdN2fidan7hseCF4cqMJgaJJobphlYmiUlWpiYpBonpZoYGKSkWCanGZinmqaYBDoEpTcEMjLwpbGwMjJAIIjPxhCUn5+rYMTAAACBMB6J';
-        } else if (room === '3') {
-            roomChannel = 'Room 3';
-            roomToken = '007eJxTYIg1nCttfWbzr12fni0/Omt6SWn/P6EjYUwt4eGX0w05bHcqMJgaJJobphlYmiUlWpiYpBonpZoYGKSkWCanGZinmqaYpDsEpTcEMjJ8n8bFzMgAgSA+G0NQfn6ugjEDAwDWciAt';
-        } else if (room === '4') {
-            roomChannel = 'Room 4';
-            roomToken = '007eJxTYLjpr5WadlVS50hBoPsXLn+zeQWnYiZXN93V0OhqmhC946wCg6lBorlhmoGlWVKihYlJqnFSqomBQUqKZXKagXmqaYpJvUNQekMgI8PtOl1mRgYIBPHZGILy83MVTBgYAD2eHsA=';
-        }
+  // ======= Render =======
+  return (
+    <div
+      className="video-room"
+      style={{
+        position: 'relative',
+        minHeight: '100vh',
+        backgroundColor: 'white', // fixed background color
+      }}
+    >
+      {/* Home Button (top-left, blue like others) */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 12,
+          left: 12,
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={goHome}
+          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+        >
+          Home
+        </Button>
+      </div>
 
-        console.log("room:", room);
-        console.log("roomChannel:", roomChannel);
-        console.log("Users in call: ", users);
-        console.log("client.remoteUsers: ", client.remoteUsers);
+      {/* AI toggle (top-right) */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 12,
+          right: 12,
+          zIndex: 1000,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <Button
+          size="sm"
+          variant={aiAllowed ? 'success' : 'secondary'}
+          onClick={toggleAiAccess}
+          title="AI privacy for this call"
+          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+        >
+          {aiAllowed ? 'AI: On' : 'AI: Off'}
+        </Button>
+      </div>
 
-        client
-            .join(APP_ID, roomChannel, roomToken, null)
-            .then((uid) =>
-                Promise.all([
-                    AgoraRTC.createMicrophoneAndCameraTracks(),
-                    uid,
-                ])
-            )
-            .then(([tracks, uid]) => {
-                const [audioTrack, videoTrack] = tracks;
-                setLocalTracks(tracks);
-                setUsers((previousUsers) => [
-                    ...previousUsers,
-                    {
-                        uid,
-                        videoTrack,
-                        audioTrack,
-                    },
-                ]);
-                client.publish(tracks);
-            });
+      {/* Centered control buttons */}
+      <div
+        className="controls"
+        style={{
+          position: 'fixed',
+          top: 10,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 900,
+          display: 'flex',
+          gap: 8,
+        }}
+      >
+        <Button variant="primary" onClick={toggleMute}>
+          {muted ? 'Unmute' : 'Mute'}
+        </Button>
+        <Button variant="primary" onClick={toggleHideVideo}>
+          {hidden ? 'Show Video' : 'Hide Video'}
+        </Button>
+      </div>
 
-        return () => {
-            for (let localTrack of localTracks) {
-                localTrack.stop();
-                localTrack.close();
-            }
-            client.off('user-published', handleUserJoined);
-            client.off('user-left', handleUserLeft);
-            client.unpublish().then(() => client.leave());
-        };
-    }, [room]);
-
-    return (
-        <div className="video-room-container">
-            {/* Video Grid */}
-            <div className="video-grid">
-                {users.map((user) => (
-                    <div key={user.uid} className="video-box">
-                        <VideoPlayer user={user} />
-                    </div>
-                ))}
-            </div>
-
-            {/* Controls */}
-            <button className="btn-mute" onClick={handleMute} >
-                {mute ? 'Unmute' : 'Mute'}
-            </button>
-            <button className="btn-hide" onClick={toggleHideVideo}>
-                {hidden ? 'Show Video' : 'Hide Video'}
-            </button>
-            <button className="btn-end-call" onClick={handleEndCall}>
-                End Call
-            </button>
-            <div className="conversation-box">
-                <div className="conversation-log">
-                    {conversationText.split('\n').map((line, index) => (
-                        <p key={index}>{line}</p>
-                    ))}
-                </div>
-            </div>
-            {/* Text Input for Translation */}
-            <div className="text-input-container">
-                <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message and press Enter"
-                />
-                {isTranslating && <p>Translating...</p>}
-            </div>
-        </div>
-    );
+      {/* Video feed area */}
+      <div
+        className="videos"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {users.map((user) => (
+          <VideoPlayer key={user.uid} user={user} />
+        ))}
+      </div>
+    </div>
+  );
 };
+
+export default VideoRoom;
