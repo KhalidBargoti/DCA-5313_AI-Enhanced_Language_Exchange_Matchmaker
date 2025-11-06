@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { VideoPlayer } from './VideoPlayer';
 import Button from 'react-bootstrap/Button';
@@ -6,7 +6,7 @@ import { useNavigate, createSearchParams, useSearchParams } from 'react-router-d
 import './VideoRoom.css';
 
 const APP_ID = '50a71f096ba844e3be400dd9cf07e5d4';
-const TOKEN = '007eJxTYOhhrnb9uYLpTaDLQwkDQ9vpG38Ufpk68XDbtiXpGz59ZAtQYDA1SDQ3TDOwNEtKtDAxSTVOSjUxMEhJsUxOMzBPNU0xeRcalN4QyMjw7tlCFkYGCATxuRlyE0uSM3ITszPz0hkYALNiJKE=';
+const TOKEN = 'YOUR_TOKEN_HERE';
 const CHANNEL = 'matchmaking';
 
 export const client = AgoraRTC.createClient({
@@ -25,7 +25,10 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
   const [search] = useSearchParams();
   const id = search.get('id') || currentUserId;
 
-  // ======= AGORA setup =======
+  // guard so we don't double-cleanup
+  const endedRef = useRef(false);
+
+  // ===== Join & event wiring =====
   useEffect(() => {
     let isMounted = true;
 
@@ -51,12 +54,18 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
       });
 
       const roomChannel = room || CHANNEL;
+
       await client
         .join(APP_ID, roomChannel, TOKEN, null)
         .then((uid) => Promise.all([AgoraRTC.createMicrophoneAndCameraTracks(), uid]))
         .then(([tracks, uid]) => {
+          if (!isMounted) {
+            // safety: close tracks if we raced unmount
+            try { tracks[0]?.stop(); tracks[0]?.close(); } catch {}
+            try { tracks[1]?.stop(); tracks[1]?.close(); } catch {}
+            return;
+          }
           const [audioTrack, videoTrack] = tracks;
-          if (!isMounted) return;
           setLocalTracks(tracks);
           setUsers((prev) => [...prev, { uid, videoTrack, audioTrack }]);
           client.publish(tracks);
@@ -65,21 +74,63 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
 
     init();
 
+    // Unmount cleanup (backup – End Call does this too)
     return () => {
-      isMounted = false;
-      for (let t of localTracks) {
-        try {
-          t.stop();
-          t.close();
-        } catch {}
-      }
-      client.leave().catch(() => {});
-      setUsers([]);
+      cleanupCall(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ======= Controls =======
+  // Hard cleanup routine used by both unmount and explicit End Call
+  const cleanupCall = async (removeListeners = true) => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+
+    try {
+      // Best-effort unpublish
+      if (localTracks && localTracks.length) {
+        try {
+          await client.unpublish(localTracks).catch(() => {});
+        } catch {}
+      }
+    } catch {}
+
+    // Stop & close local tracks
+    if (localTracks && localTracks.length) {
+      for (const t of localTracks) {
+        try { t.stop(); } catch {}
+        try { t.close(); } catch {}
+      }
+    }
+
+    // Leave channel
+    try { await client.leave(); } catch {}
+
+    // Optionally remove listeners
+    if (removeListeners) {
+      try { client.removeAllListeners(); } catch {}
+    }
+
+    // Reset local state
+    setUsers([]);
+    setLocalTracks([]);
+    setMuted(false);
+    setHidden(false);
+  };
+
+  // Warn/cleanup when tab is closed or refreshed
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Synchronous best-effort cleanup (cannot await here)
+      try { localTracks?.forEach((t) => { try { t.stop(); } catch {}; try { t.close(); } catch {}; }); } catch {}
+      try { client.leave(); } catch {}
+      try { client.removeAllListeners(); } catch {}
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [localTracks]);
+
+  // ===== Controls =====
   const toggleMute = () => {
     setMuted((prev) => {
       const next = !prev;
@@ -106,34 +157,47 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
       }
     } catch (err) {
       console.error('Failed to update AI access', err);
-      setAiAllowed(!next);
+      setAiAllowed(!next); // revert
     }
   };
 
-  const goHome = () => {
+  // ===== End Call (navigate to PostVideocall) =====
+  const endCall = async () => {
+    await cleanupCall(true);
+    navigate({
+      pathname: '/PostVideocall',
+      search: createSearchParams({ id: id }).toString(),
+    });
+  };
+
+  // ===== Home (navigate without the PostVideocall flow) =====
+  const goHome = async () => {
+    await cleanupCall(true);
     navigate({
       pathname: '/Dashboard',
       search: createSearchParams({ id: id }).toString(),
     });
   };
 
-  // ======= Render =======
+  // ===== Render =====
   return (
     <div
       className="video-room"
       style={{
         position: 'relative',
         minHeight: '100vh',
-        backgroundColor: 'white', // fixed background color
+        backgroundColor: '#fff',
       }}
     >
-      {/* Home Button (top-left, blue like others) */}
+      {/* Top-left: Home + End Call */}
       <div
         style={{
           position: 'fixed',
           top: 12,
           left: 12,
           zIndex: 1000,
+          display: 'flex',
+          gap: 8,
         }}
       >
         <Button
@@ -144,9 +208,17 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
         >
           Home
         </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={endCall}
+          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+        >
+          End Call
+        </Button>
       </div>
 
-      {/* AI toggle (top-right) */}
+      {/* Top-right: AI toggle */}
       <div
         style={{
           position: 'fixed',
@@ -169,7 +241,7 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
         </Button>
       </div>
 
-      {/* Centered control buttons */}
+      {/* Center controls */}
       <div
         className="controls"
         style={{
@@ -190,7 +262,7 @@ export const VideoRoom = ({ room, initialAiAllowed = true, chatId, currentUserId
         </Button>
       </div>
 
-      {/* Video feed area */}
+      {/* Video area */}
       <div
         className="videos"
         style={{
