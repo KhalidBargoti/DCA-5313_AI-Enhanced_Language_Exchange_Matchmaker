@@ -14,29 +14,24 @@
   width: 30px;
   height: 30px;
   float: left;
-
 }
+
 .left {
-  background:linear-gradient(135deg, rgb(19, 206, 209) 0%,rgb(165, 136, 74) 100%);
+  background: linear-gradient(135deg, rgb(19, 206, 209) 0%, rgb(165, 136, 74) 100%);
   display: flex;
   margin-top: 20px;
   flex-direction: row;
   align-items: left;
 }
 
-iframe
-{
-    display: none;
-}
+iframe { display: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-
+  .App-logo { animation: App-logo-spin infinite 20s linear; }
 }
+
 .btn-chat{
-  background:linear-gradient(135deg, rgba(34,193,195,1) 0%,     rgba(253,187,45,1) 100%);
+  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
   width: 19%;
   margin: 10px 0;
   height: 35px;
@@ -47,7 +42,7 @@ iframe
   float: center;
 }
 .btn-help{
-  background:linear-gradient(135deg, rgba(34,193,195,1) 0%,     rgba(253,187,45,1) 100%);
+  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
   width: 15%;
   margin: 10px 0;
   height: 35px;
@@ -58,39 +53,40 @@ iframe
   float: right;
 }
 .btn-join {
-    background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
-    width: 30%;
-    margin: 10px 0;
-    height: 40px;
-    border-radius: 15px;
-    outline: none;
-    border: none;
-    color: white;
+  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
+  width: 30%;
+  margin: 10px 0;
+  height: 40px;
+  border-radius: 15px;
+  outline: none;
+  border: none;
+  color: white;
 }
 
 .frientlist{
   height: 200px;
-  overflow-y:scroll
+  overflow-y: scroll;
 }
 
+/* GLOBAL APP BACKGROUND — make white so it doesn't bleed through */
 .App {
   text-align: center;
-  background-color:green;
+  background-color: #fff;   /* was green */
 }
- 
+
 .label{
   display: block;
   font-size: larger;
   color: black;
   padding: 5px;
 }
- 
+
 .input{
   font-size: larger;
   padding: 5px;
   margin: 2px;
-  
 }
+
 .btn{
   color: white;
   border-radius: 5px;
@@ -99,12 +95,9 @@ iframe
   padding: 5px;
   margin: 10px auto;
 }
- 
-.messages{
-  display: flex;
-  justify-content: center;
-}
- 
+
+.messages { display: flex; justify-content: center; }
+
 .error{
   display: block;
   background-color: red;
@@ -113,7 +106,7 @@ iframe
   height: 45px;
   padding: 5px;
 }
- 
+
 .success{
   display: block;
   background-color: lightblue;
@@ -124,37 +117,42 @@ iframe
 }
 
 .call-container {
-    width: 30%;
-    height: 100%;
-    margin: 0 auto;
-    border-radius: 10px;
-    background-color: white;
-    padding: 15px;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(99, 68, 166, 0.5); /* Box shadow with specified color */
+  width: 30%;
+  height: 100%;
+  margin: 0 auto;
+  border-radius: 10px;
+  background-color: white;
+  padding: 15px;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(99, 68, 166, 0.5);
 }
 
 .card {
-    max-width: 33rem;
-    background: #fff;
-    margin: 0 1rem;
-    padding: 1rem;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    border-radius: 0.5rem;
+  max-width: 33rem;
+  background: #fff;
+  margin: 0 1rem;
+  padding: 1rem;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  border-radius: 0.5rem;
 }
 
-.stars {
-    display: flex;
-    gap: 0.5rem;
-}
+.stars { display: flex; gap: 0.5rem; }
+.star { font-size: 10vh; cursor: pointer; }
+.star.selected { color: gold; }
 
-.star {
-    font-size: 10vh;
-    cursor: pointer;
+/* --- Join Room page hardening (prevents any green strip) --- */
+.video-call-container { background: #fff !important; min-height: 100vh; }
+.video-call-container .body,
+.video-call-container .join {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  position: relative;
 }
-
-.star.selected {
-    color: gold;
-}
+.video-call-container .body::before,
+.video-call-container .body::after,
+.video-call-container .join::before,
+.video-call-container .join::after { content: none !important; }
