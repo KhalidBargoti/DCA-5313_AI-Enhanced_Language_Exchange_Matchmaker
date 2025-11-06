@@ -63,7 +63,7 @@ function Videocall() {
       {/* Home button only visible BEFORE joining (prevents duplicate with VideoRoom top bar) */}
       {!joined && (
         <div className="vc-home-btn-wrap">
-          <Button variant="primary" size="sm" onClick={goHome}>🏠 Home</Button>
+          <Button variant="primary" size="sm" onClick={goHome}>Home</Button>
         </div>
       )}
 
