@@ -7,7 +7,7 @@ import './VideoRoom.css';
 
 const APP_ID = 'f314adc296d7440295289aa2502b2cb3';
 const TOKEN = '007eJxTYPBjrLyfk1A8teLj+jV7979aeKRjbv5K0xeCHedEneLklJoUGNKMDU0SU5KNLM1SzE1MDIwsTY0sLBMTjUwNjJKMkpOMVXR4MxsCGRkCtquxMjJAIIjPzZCbWJKckZuYnZmXzsAAADbKIQY=';
-const DEFAULT_CHANNEL = 'matchmaking';
+const CHANNEL = 'matchmaking';
 
 export const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
@@ -22,82 +22,99 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   const id = search.get('id') || currentUserId || '';
   const navigate = useNavigate();
 
-  // guards against double-join
-  const joinStartedRef = useRef(false);
+  // prevent multiple joins
   const joinedRef = useRef(false);
 
+  // Initialize and join channel
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
 
-    const onPublished = async (user, mediaType) => {
+    const handleUserPublished = async (user, mediaType) => {
       await client.subscribe(user, mediaType);
       if (mediaType === 'video') {
-        setUsers((prev) => (prev.some((u) => u.uid === user.uid) ? prev : [...prev, user]));
+        setUsers(prev => {
+          if (prev.some(u => u.uid === user.uid)) return prev;
+          return [...prev, user];
+        });
       }
       if (mediaType === 'audio') user.audioTrack?.play();
     };
-    const onUnpublished = (user, type) => {
-      if (type === 'audio') user.audioTrack?.stop?.();
-      setUsers((prev) => prev.filter((u) => u.uid !== user.uid));
+
+    const handleUserUnpublished = (user, mediaType) => {
+      if (mediaType === 'video') {
+        user.videoTrack?.stop?.();
+        setUsers(prev => prev.filter(u => u.uid !== user.uid));
+      } else if (mediaType === 'audio') {
+        user.audioTrack?.stop?.();
+      }
     };
-    const onLeft = (user) => setUsers((prev) => prev.filter((u) => u.uid !== user.uid));
+
+    const handleUserLeft = (user) => {
+      setUsers(prev => prev.filter(u => u.uid !== user.uid));
+    };
 
     const init = async () => {
-      if (joinStartedRef.current || joinedRef.current) return;
-      joinStartedRef.current = true;
-
-      client.on('user-published', onPublished);
-      client.on('user-unpublished', onUnpublished);
-      client.on('user-left', onLeft);
-
-      const channel = room || DEFAULT_CHANNEL;
-
+      if (joinedRef.current) return; // already joined
       try {
+        client.on('user-published', handleUserPublished);
+        client.on('user-unpublished', handleUserUnpublished);
+        client.on('user-left', handleUserLeft);
+
+        const channel = room || CHANNEL;
         const uid = await client.join(APP_ID, channel, TOKEN, null);
+
         const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-        if (!mounted) {
-          try { tracks[0]?.stop(); tracks[0]?.close(); } catch {}
-          try { tracks[1]?.stop(); tracks[1]?.close(); } catch {}
-          return;
-        }
+        if (cancelled) return;
+
         const [audioTrack, videoTrack] = tracks;
         setLocalTracks(tracks);
-        setUsers((prev) => [...prev, { uid, videoTrack, audioTrack }]);
+
+        // Add local user video
+        setUsers(prev => [...prev, { uid, videoTrack, audioTrack }]);
+
         await client.publish(tracks);
         joinedRef.current = true;
+        console.log('Joined channel:', channel, 'as UID', uid);
       } catch (err) {
         console.error('Agora init error:', err);
-        joinStartedRef.current = false;
       }
     };
 
     init();
 
     return () => {
+      cancelled = true;
       cleanupCall(true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room]);
 
+  /** Cleanup when leaving/unmounting */
   const cleanupCall = async (removeListeners = true) => {
-    try { if (localTracks?.length) await client.unpublish(localTracks); } catch {}
-    if (localTracks?.length) {
-      for (const t of localTracks) { try { t.stop(); } catch {}; try { t.close(); } catch {}; }
+    try {
+      if (localTracks.length) await client.unpublish(localTracks);
+    } catch (e) {
+      console.warn('Unpublish error:', e);
     }
+
+    for (const t of localTracks) {
+      try { t.stop(); t.close(); } catch {}
+    }
+
     try { await client.leave(); } catch {}
-    if (removeListeners) { try { client.removeAllListeners(); } catch {} }
+    if (removeListeners) client.removeAllListeners();
 
     setUsers([]);
     setLocalTracks([]);
     setMuted(false);
     setHidden(false);
-    joinStartedRef.current = false;
     joinedRef.current = false;
   };
 
+  /** Cleanup when tab closes or refreshes */
   useEffect(() => {
     const beforeUnload = () => {
-      try { localTracks?.forEach((t) => { try { t.stop(); } catch {}; try { t.close(); } catch {}; }); } catch {}
+      localTracks.forEach(t => { try { t.stop(); t.close(); } catch {} });
       try { client.leave(); } catch {}
       try { client.removeAllListeners(); } catch {}
     };
@@ -105,8 +122,9 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [localTracks]);
 
+  /** UI Handlers **/
   const toggleMute = () => {
-    setMuted((prev) => {
+    setMuted(prev => {
       const next = !prev;
       localTracks[0]?.setEnabled(!next);
       return next;
@@ -114,9 +132,11 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const toggleHideVideo = () => {
-    const next = !hidden;
-    localTracks[1]?.setEnabled(!next);
-    setHidden(next);
+    setHidden(prev => {
+      const next = !prev;
+      localTracks[1]?.setEnabled(!next);
+      return next;
+    });
   };
 
   const toggleAiAccess = async () => {
@@ -145,15 +165,19 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
 
   return (
     <div className="vr-root">
-      {/* Fixed top bar so video is always below it */}
+      {/* Top bar controls */}
       <div className="vr-topbar">
         <div className="vr-left">
           <Button className="vr-btn" variant="primary" size="sm" onClick={goHome}>Home</Button>
           <Button className="vr-btn" variant="danger" size="sm" onClick={endCall}>End Call</Button>
         </div>
         <div className="vr-center">
-          <Button className="vr-btn" variant="primary" onClick={toggleMute}>{muted ? 'Unmute' : 'Mute'}</Button>
-          <Button className="vr-btn" variant="primary" onClick={toggleHideVideo}>{hidden ? 'Show Video' : 'Hide Video'}</Button>
+          <Button className="vr-btn" variant="primary" onClick={toggleMute}>
+            {muted ? 'Unmute' : 'Mute'}
+          </Button>
+          <Button className="vr-btn" variant="primary" onClick={toggleHideVideo}>
+            {hidden ? 'Show Video' : 'Hide Video'}
+          </Button>
         </div>
         <div className="vr-right">
           <Button
@@ -168,10 +192,10 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
         </div>
       </div>
 
-      {/* Video content */}
+      {/* Video Grid */}
       <div className="vr-content">
         <div className="videos">
-          {users.map((user) => (
+          {users.map(user => (
             <VideoPlayer key={user.uid} user={user} />
           ))}
         </div>
