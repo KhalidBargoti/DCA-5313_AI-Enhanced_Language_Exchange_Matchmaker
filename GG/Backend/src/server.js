@@ -11,8 +11,9 @@ app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
 const port = process.env.PORT || 8080;
 
 //Take data from users
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 configViewEngine(app);
 //init web route
