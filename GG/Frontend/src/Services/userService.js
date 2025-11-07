@@ -127,6 +127,26 @@ const handleReplaceUserAvailability = (userId, slots) => {
     return axios.put(`/api/v1/users/${userId}/availability`, { slots });
 };
 
+
+export const handleAddTrueFriend = (userId1, userId2) => {
+  return axios.post('/api/v1/addTrueFriend', { userId1, userId2 });
+};
+
+export const handleRemoveTrueFriend = async (userId1, userId2) => {
+  const { data } = await axios.delete('/api/v1/removeTrueFriend', {
+    data: { userId1, userId2 }
+  });
+  return data; // { message: 'Friend removed successfully' } or 404/500
+};
+
+export const handleGetTrueFriendsList = async (userId) => {
+  const url = `http://localhost:8080/api/v1/friends/${userId}`;
+  const r = await fetch(url, { credentials: 'include' }); 
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  return data;
+};
+
 export const handleGetUserProficiencyAndRating = async (userId) => {
     try {
         const response = await axios.get(`/api/v1/getUserProfile/${userId}`);

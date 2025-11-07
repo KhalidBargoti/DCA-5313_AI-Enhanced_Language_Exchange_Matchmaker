@@ -15,7 +15,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability } from '../Services/userService';
+import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability, handleAddTrueFriend } from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -214,32 +214,34 @@ const FriendSearch = () => {
 
   const handleQuickAddFriend = async (user) => {
     try {
-      const currentUserId = id;
-      const fullName = `${user.firstName} ${user.lastName}`;
+    const currentUserId = Number(id);
+    const targetUserId  = Number(user.id);
+    const fullName      = `${user.firstName} ${user.lastName}`;
 
-      // Get current list to avoid duplicates
-      const { data } = await handleGetFriendsList(currentUserId);
-      const current = Array.isArray(data?.friendsList) ? data.friendsList : [];
+    // 1) Create the friend pair in the Friends table (IDs)
+    await handleAddTrueFriend(currentUserId, targetUserId);
 
-      if (current.includes(fullName)) {
-        setSuccessMessage(`${fullName} is already in your friends list.`);
-        setTimeout(() => setSuccessMessage(''), 2500);
-        return;
-      }
-
-      const updated = [...current, fullName];
+    // 2) (Optional legacy) keep your "friendsList" name array in DB
+    const { data } = await handleGetFriendsList(currentUserId);
+    const current = Array.isArray(data?.friendsList) ? data.friendsList : [];
+    const updated = current.includes(fullName) ? current : [...current, fullName];
+    if (updated !== current) {
       await handleAddToFriendsList(currentUserId, updated);
-
-      // keep local UI in sync
       localStorage.setItem('friendsList', JSON.stringify(updated));
-
-      setSuccessMessage(`Added ${fullName} to your friends!`);
-      setTimeout(() => setSuccessMessage(''), 2500);
-    } catch (err) {
-      console.error(err);
-      setSuccessMessage('Could not add friend. Please try again.');
-      setTimeout(() => setSuccessMessage(''), 2500);
     }
+
+    setSuccessMessage(`Added ${fullName} to your friends!`);
+    setTimeout(() => setSuccessMessage(''), 2500);
+
+  } catch (err) {
+    const msg = err?.response?.data?.error || err.message;
+    // Nice duplicate message if backend returns 409
+    setSuccessMessage(msg === 'Friendship already exists'
+      ? 'Already friends!'
+      : `Could not add friend: ${msg}`);
+    setTimeout(() => setSuccessMessage(''), 2500);
+    console.error('Add friend failed:', err);
+  }
   };
 
   const fetchUserProfile = async (userId) => {
@@ -404,39 +406,25 @@ const FriendSearch = () => {
       console.log("Updated Friends List:", updatedList);
 
       try {
-        const response = await handleAddToFriendsList(id, updatedList.split(', '));
-        // Check if response contains the expected structure
-        if (response && response.data && response.data.message) {
-            console.log(response.data.message);
-        } else {
-            console.error('Unexpected response structure:', response);
-        }
+    // 1) Add pair to the pair-table on backend
+    // await handleAddTrueFriend(Number(), Number(user.id));
+     await handleAddTrueFriend(Number(id), Number(user.id));
 
-          // Display success message
-        setSuccessMessage('User has been Successfully Added to your Friends List');
+    /*// 2) (Optional legacy) persist display list of names as you already do
+    const response = await handleAddToFriendsList(id, updatedList.split(', '));
+    if (response?.data?.message) console.log(response.data.message);*/
 
-        // Clear the message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage('');
-        }, 3000);
-
-      } catch (error) {
-          // Handle both request and response errors
-          if (error.response) {
-              console.error('API Error:', error.response.data);
-          } else {
-              console.error('Request Error:', error.message);
-          }
-      }
-    } else {
-        // Display fail message if user is already on the friend list
-        setSuccessMessage('User is already on your friends list!');
-
-        // Clear the message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage('');
-        }, 3000);
-    }
+    setSuccessMessage('User has been Successfully Added to your Friends List');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  } catch (error) {
+    console.error('Add friend error:', error?.response?.data || error.message);
+    setSuccessMessage('Failed to add friend.');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  }
+} else {
+  setSuccessMessage('User is already on your friends list!');
+  setTimeout(() => setSuccessMessage(''), 3000);
+}
   };
 
   const handleRemovePartner = (userId) => {
