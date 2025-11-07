@@ -1,7 +1,6 @@
-'use strict';
-
-module.exports = {
-  up: async (queryInterface, Sequelize) => {
+/** @type {import('sequelize-cli').Migration} */
+export default {
+  async up(queryInterface, Sequelize) {
     // Add the new default_time_zone column
     await queryInterface.addColumn('UserProfile', 'default_time_zone', {
       type: Sequelize.STRING,
@@ -14,7 +13,7 @@ module.exports = {
     await queryInterface.removeColumn('UserProfile', 'times_available');
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     // Remove the new default_time_zone column
     await queryInterface.removeColumn('UserProfile', 'default_time_zone');
 
