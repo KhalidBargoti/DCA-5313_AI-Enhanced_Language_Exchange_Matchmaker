@@ -1,10 +1,6 @@
-'use strict';
-
-const { type } = require("os");
-const { sequelize } = require("../models");
-
-module.exports = {
-  up: async (queryInterface, Sequelize) => {
+/** @type {import('sequelize-cli').Migration} */
+export default {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('UserProfile', {
       id: {
         allowNull: false,
@@ -68,7 +64,8 @@ module.exports = {
             type: Sequelize.DATE
         }});
   },
-  down: async (queryInterface, Sequelize) => {
+
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('UserProfile');
   }
 };
