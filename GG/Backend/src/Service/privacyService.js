@@ -21,7 +21,7 @@ export async function assertParticipant(chatId, userId) {
 
 /**
  * Throws if AI access is disallowed for this chat.
- * Use this ANY time you plan to send conversation data to an AI.
+ * Use this ANY time you plan to send video conversation data to an AI.
  */
 export async function assertAIAllowed(chatId) {
   const chat = await db.ChatModel.findByPk(chatId, {

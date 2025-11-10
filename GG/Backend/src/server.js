@@ -4,6 +4,7 @@ import initWebRoute from './route/web.js';
 import initAPIRoute from './route/api.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { startMCPServer } from './mcp/server.js';
 
 dotenv.config();
 const app = express();
@@ -22,6 +23,11 @@ configViewEngine(app);
 initWebRoute(app);
 //init API route
 initAPIRoute(app);
+
+// Start MCP server
+startMCPServer().catch((err) => {
+  console.error("Failed to start MCP server:", err);
+});
 
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)

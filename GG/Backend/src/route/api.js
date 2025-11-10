@@ -6,6 +6,7 @@ import availabilityController from "../controller/availabilityController.js";
 //import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
+import * as aiAssistantController from "../controller/aiAssistantController.js";
 
 
 let router = express.Router();
@@ -48,6 +49,12 @@ const initAPIRoute = (app) => {
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
 
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
+
+    // AI routes
+    router.post('/ai-assistant/chat', aiAssistantController.chatWithAssistant);
+    router.post('/ai-assistant/save', aiAssistantController.saveConversation);
+    router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
+    router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
 
     return app.use('/api/v1/', router)
 }
