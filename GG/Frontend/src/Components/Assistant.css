@@ -60,6 +60,8 @@
   line-height: 1.35;
   box-shadow: 0 2px 8px rgba(0,0,0,.06);
   background: #fff;
+  text-align: left;
+  word-wrap: break-word;
 }
 .from-user .msg-bubble {
   background: #5b3caf;

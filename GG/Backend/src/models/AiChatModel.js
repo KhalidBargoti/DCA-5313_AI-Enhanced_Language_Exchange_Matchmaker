@@ -3,11 +3,6 @@ import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class AIChatModel extends Model {
     static associate(models) {
-      // user can have many AI chat sessions
-      AIChatModel.belongsTo(models.UserAccount, {
-        foreignKey: "user_id",
-        onDelete: "CASCADE"
-      });
     }
   }
 

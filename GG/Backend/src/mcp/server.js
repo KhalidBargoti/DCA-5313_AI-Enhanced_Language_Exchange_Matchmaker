@@ -1,33 +1,53 @@
 import http from "http";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { partnerMatching } from "./tools/partnerMatching.js";
+import { z } from "zod";
 
 export async function startMCPServer() {
-  const server = new Server({
+  const server = new McpServer({
     name: "languageexchangematchmaker-server",
     version: "1.0.0",
   });
 
-  server.addTool({
-    name: "partnerMatching",
-    description: "Suggest compatible language practice partners based on user preferences.",
+  server.registerTool("partnerMatching", {
+    description: "Suggest compatible language practice partners based on user preferences. Can filter by optional criteria like zodiac sign or MBTI type.",
     inputSchema: {
-      type: "object",
-      properties: {
-        userId: { type: "number" },
-      },
-      required: ["userId"],
+      userId: z.number(),
+      criteria: z.object({
+        zodiac: z.string().min(1).optional(),
+        mbti: z.string().min(2).optional(),
+      }).optional(),
     },
-    async handler(args) {
-      return await partnerMatching(args);
+  }, async (args) => {
+    return await partnerMatching(args);
+  });
+
+  server.registerTool("summarizePracticeSession", {
+    description: "Summarize a practice session conversation. Only works if AI access was allowed for the session.",
+    inputSchema: {
+      chatId: z.number(),
     },
+  }, async (args) => {
+    // TODO: update once transcript generation is supported
+    // Returns a placeholder currently
+    return {
+      message: "SummarizePracticeSession tool is not yet implemented",
+      chatId: args.chatId,
+    };
   });
 
   const httpServer = http.createServer();
-  const transport = new HttpServerTransport({
-    server: httpServer,
-    path: "/mcp",
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => {
+      // Generate a session ID
+      return `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    },
+  });
+
+  // Handle server requests on transport
+  httpServer.on("request", async (req, res) => {
+    await transport.handleRequest(req, res);
   });
 
   await server.connect(transport);
