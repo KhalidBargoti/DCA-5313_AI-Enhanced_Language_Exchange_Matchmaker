@@ -3,6 +3,7 @@ import APIController from "../controller/APIController.js";
 import interestController from "../controller/interestController.js";
 import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
+import transcriptController from "../controller/transcriptController.js";
 //import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
@@ -46,6 +47,9 @@ const initAPIRoute = (app) => {
     router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
     router.put('/users/:userId/availability', availabilityController.replaceAvailability);
 
+    router.get('/transcript/:filename', transcriptController.generateTranscript);
+    router.post('/transcript/:filename', transcriptController.generateTranscript);
+  
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
 
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
