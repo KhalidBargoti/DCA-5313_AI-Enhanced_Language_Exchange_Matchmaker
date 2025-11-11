@@ -56,8 +56,8 @@ function UserReport() {
                     setHidden(false);
                     setUserInfo({
                         rating: userProfile.rating || "N/A",
-                        proficiency: userProfile.proficiency || "N/A",
-                        comments: userProfile.comments || "N/A",
+                        //proficiency: userProfile.proficiency || "N/A",
+                        comment: userProfile.comment || "N/A",
                     });
                 }
             } catch (error) {
@@ -107,16 +107,16 @@ function UserReport() {
                                     <p>{userInfo.rating}</p>
                                 </div>
 
-                                {/* Display proficiency */}
+                                {/* Display proficiency *
                                 <div className="data-display">
                                     <h3>Proficiency:</h3>
                                     <p>{userInfo.proficiency}</p>
-                                </div>
+                                </div>*/}
 
                                 {/* Display comments */}
                                 <div className="data-display">
                                     <h3>Comments:</h3>
-                                    <p>{userInfo.comments}</p>
+                                    <p>{userInfo.comment}</p>
                                 </div>
                             </>
                         )
