@@ -1,4 +1,4 @@
-import db from '../models/index';
+import db from '../models/index.js';
 
 let getAvailability = (user_id) => {
     return db.UserAvailability.findAll({ where: { user_id }, order: [['day_of_week', 'ASC'], ['start_time', 'ASC']] });
@@ -23,6 +23,7 @@ let replaceAvailability = async (user_id, slots) => {
     return addAvailability(user_id, slots);
 }
 
-module.exports = { getAvailability, addAvailability, removeAvailability, replaceAvailability }
+const availabilityService = { getAvailability, addAvailability, removeAvailability, replaceAvailability };
+export default availabilityService;
 
 

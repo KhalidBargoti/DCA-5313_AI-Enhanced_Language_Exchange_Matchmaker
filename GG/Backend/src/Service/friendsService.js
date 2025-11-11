@@ -1,5 +1,5 @@
-import db from '../models/index';
-const { Op } = require("sequelize");
+import db from '../models/index.js';
+import { Op } from "sequelize";
 
 let handleFriendsModel = (user1_ID, user2_ID) => {
     return new Promise(async (resolve, reject) => {
@@ -30,7 +30,7 @@ let handleFindFriends = (user1_ID) => {
                     where: {user1_ID : user1_ID},
                     attributes: ['user2_ID']
             });
-            console.log("friends"+ friendsModels)
+            //console.log("friends"+ friendsModels)
             friendsData.errMessage = 'Friends found!';
             friendsData.data = friendsModels;
             resolve(friendsData);
@@ -70,6 +70,7 @@ let handleFindFriend = (user1_ID, user2_ID) => {
 
 
 
-module.exports = {handleFriendsModel : handleFriendsModel,
+const friendsService = {handleFriendsModel : handleFriendsModel,
  handleFindFriends : handleFindFriends,
- handleFindFriend : handleFindFriend}
+ handleFindFriend : handleFindFriend};
+ export default friendsService;

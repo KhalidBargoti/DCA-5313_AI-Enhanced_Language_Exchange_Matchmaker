@@ -1,14 +1,14 @@
 import express from "express";
-import homeController from '../controller/homeController';
+import homeController from '../controller/homeController.js';
 import multer from 'multer';
 import path from 'path';
-import userController from '../controller/userController';
-import dashBoardController from '../controller/dashBoardController';
-import messageController from '../controller/messageController';
-import chatController from '../controller/chatController';
-import friendsController from '../controller/friendsController';
-import matchingController from '../controller/matchingController';
-var appRoot = require('app-root-path');
+import userController from '../controller/userController.js';
+import dashBoardController from '../controller/dashBoardController.js';
+import messageController from '../controller/messageController.js';
+import chatController from '../controller/chatController.js';
+import friendsController from '../controller/friendsController.js';
+import matchingController from '../controller/matchingController.js';
+import appRoot from 'app-root-path';
 let router = express.Router();
 
 

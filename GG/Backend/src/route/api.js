@@ -5,6 +5,10 @@ import userInterestController from "../controller/userInterestController";
 import availabilityController from "../controller/availabilityController";
 import transcriptController from "../controller/transcriptController";
 //import userController from "../controller/userController.js";//added this
+import chatController from "../controller/chatController.js";
+import * as assistantController from "../controller/assistantController.js";
+import * as aiAssistantController from "../controller/aiAssistantController.js";
+
 
 let router = express.Router();
 
@@ -26,6 +30,10 @@ const initAPIRoute = (app) => {
     router.post('/addToFriendsList', APIController.addToFriendsList);
     router.get('/getFriendsList', APIController.getFriendsList);
 
+    router.post('/addTrueFriend', APIController.addTrueFriend);
+    router.delete('/removeTrueFriend', APIController.removeTrueFriend);
+    router.get('/friends/:userId', APIController.getTrueFriendsList);
+
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);
 
@@ -42,6 +50,16 @@ const initAPIRoute = (app) => {
     router.get('/transcript/:filename', transcriptController.generateTranscript);
     router.post('/transcript/:filename', transcriptController.generateTranscript);
   
+    router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
+
+    router.post('/assistant/parse/:chatId', assistantController.parseConversation);
+
+    // AI routes
+    router.post('/ai-assistant/chat', aiAssistantController.chatWithAssistant);
+    router.post('/ai-assistant/save', aiAssistantController.saveConversation);
+    router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
+    router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
+
     return app.use('/api/v1/', router)
 }
 

@@ -1,6 +1,8 @@
 
-const { Sequelize } = require('sequelize');
+import { Sequelize } from 'sequelize';
+import mysql from 'mysql2/promise';
 
+// add actual password instead of null
 const sequelize = new Sequelize('languageexchangematchmaker', 'root', null, {
   host: 'localhost',
   dialect: 'mysql'
@@ -18,12 +20,10 @@ let connectDB = async() => {
 
 // Sequelize functions were not working for me; added the mysql2 library as an alternative way to access database fields directly
 // both connections to the database were exported in case some developers prefer sequelize
-const mysql = require('mysql2/promise');
-
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '', // your actual password may be 'null'
+  password: '', // your actual password, may be 'null'
   database: 'languageexchangematchmaker',
   waitForConnections: true,
   connectionLimit: 10,
@@ -32,7 +32,5 @@ const pool = mysql.createPool({
 
 console.log(pool); // check that pool is an object with an .execute function
 
-module.exports = {
-    pool,
-    connectDB
-};
+export { pool };
+export default { pool, connectDB };

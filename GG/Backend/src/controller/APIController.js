@@ -1,4 +1,4 @@
-import { pool } from '../config/connectDB'; //TOWNSHEND: this was formally connected to sequelize...
+import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 
 //TOWNSHEND: getAllUsers may be the best way to sort users on a page since all data on a UserAccount is attached to the user
@@ -328,6 +328,92 @@ let removeFriend = async (req, res) => {
   }
 };
 
-module.exports = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend // added getUserNames as an export
-}
+
+let addTrueFriend = async (req, res) => {
+
+    try {
+    let { userId1, userId2 } = req.body;
+    userId1 = Number(userId1);
+    userId2 = Number(userId2);
+
+    if (!userId1 || !userId2) {
+      return res.status(400).json({ error: 'userId1 and userId2 are required' });
+    }
+    if (userId1 === userId2) {
+      return res.status(400).json({ error: 'Cannot friend yourself' });
+    }
+
+    const a = Math.min(userId1, userId2);
+    const b = Math.max(userId1, userId2);
+
+    // Insert (handle duplicates)
+    const sql = 'INSERT INTO friendsmodel (user1_id, user2_id) VALUES (?, ?)';
+    await pool.execute(sql, [a, b]);
+
+    return res.status(201).json({ message: 'Friend added', user_one_id: a, user_two_id: b });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Friendship already exists' });
+    }
+    console.error('addTrueFriend error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let removeTrueFriend = async (req, res) => {
+  try {
+    const { userId1, userId2 } = req.body; // extract IDs from body
+
+    const sql = `
+      DELETE FROM friendsmodel
+      WHERE (user1_id = ? AND user2_id = ?)
+         OR (user1_id = ? AND user2_id = ?)
+    `;
+    const [result] = await pool.execute(sql, [userId1, userId2, userId2, userId1]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Friend removed successfully' });
+    } else {
+      res.status(404).json({ message: 'No friendship found' });
+    }
+  } catch (err) {
+    console.error('Error removing friend:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let getTrueFriendsList = async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.firstName, u.lastName, u.email
+      FROM friendsmodel f
+      JOIN useraccount u ON u.id = f.user2_ID
+      WHERE f.user1_ID = ?
+      UNION
+      SELECT u.id, u.firstName, u.lastName, u.email
+      FROM friendsmodel f
+      JOIN useraccount u ON u.id = f.user1_ID
+      WHERE f.user2_ID = ?
+      `,
+      [userId, userId]
+    );
+
+    // Convert BinaryRows → plain objects
+    const friends = rows.map(r => ({ ...r }));
+
+    console.log('Final plain friends list:', friends);
+    return res.status(200).json({ friendsList: friends });
+  } catch (err) {
+    console.error('Error retrieving friends:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const APIController = { 
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList // added getUserNames as an export
+};
+export default APIController;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import './FriendsList.css';
 import { useNavigate, createSearchParams, useSearchParams } from "react-router-dom";
-import { handleGetFriendsList, handleAddToFriendsList } from '../Services/userService'; // Import your API handler
+import { handleGetFriendsList,handleGetTrueFriendsList, handleRemoveTrueFriend, handleAddToFriendsList } from '../Services/userService'; // Import your API handler
 
 const FriendsList = () => {
   const [friends, setFriends] = useState([]);
@@ -19,54 +19,36 @@ const FriendsList = () => {
 
   // Second useEffect: Fetch friends from the database
   useEffect(() => {
-    const fetchFriendsFromDB = async () => {
-      if (!id) {
-        console.error('User ID is missing in the query string.');
-        return;
-      }
-
-      try {
-        console.log("Fetching friends list from the database for user ID:", id);
-        const response = await handleGetFriendsList(id);
-        console.log("Full API Response:", response);
-    
-        // Adjusted to check the correct structure
-        if (response?.friendsList && Array.isArray(response.friendsList)) {
-            setFriends(response.friendsList); // Directly set friends from the database
-            console.log("Friends list from database:", response.friendsList);
-        } else {
-            console.error('Unexpected response structure:', response);
-            setFriends([]); // Default to an empty array if the structure is invalid
-        }
-      } catch (error) {
-          console.error('Error fetching friends list:', error);
-          setFriends([]); // Handle the error by resetting to an empty array
-      }
-    };
-
-    fetchFriendsFromDB();
-  }, [id]); // Dependencies: id and friends state
-
-  const removeFriend = async (firstName, lastName) => {
-    const updatedFriends = friends.filter(
-      (friend) => !(friend === `${firstName} ${lastName}`)
-    );
-    setFriends(updatedFriends);
-  
+  const fetchFriends = async () => {
     try {
-      console.log("Updating database with new friends list:", updatedFriends);
-      const response = await handleAddToFriendsList(id, updatedFriends);
-  
-      // Ensure the response structure is valid
-      if (response?.data?.message) {
-        console.log("Database update response:", response.data.message);
-      } else {
-        console.error("Unexpected response structure:", response);
-      }
-    } catch (error) {
-      console.error('Error updating friends list in the database:', error);
+      console.log('FriendsList: id=', id);
+      const payload = await handleGetTrueFriendsList(id);
+      console.log('FriendsList payload:', payload); // expect { friendsList: [...] }
+      setFriends(Array.isArray(payload?.friendsList) ? payload.friendsList : []);
+    } catch (err) {
+      console.error('Failed to fetch friends:', err);
+      setFriends([]);
     }
   };
+  if (id) fetchFriends();
+}, [id]); // Dependencies: id and friends state
+
+  const onRemoveFriend = async (friend) => {
+    const currentUserId = Number(id);         // your user id from query string
+  const targetUserId  = Number(friend.id);  // the friend’s id
+
+  // Optimistic UI update (optional)
+  setFriends(prev => prev.filter(f => f.id !== targetUserId));
+
+  try {
+    const res = await handleRemoveTrueFriend(currentUserId, targetUserId);
+    console.log('removeTrueFriend:', res?.message || res);
+  } catch (err) {
+    console.error('removeTrueFriend failed:', err);
+    // roll back optimistic update if you want:
+    // setFriends(prev => [...prev, friend]);
+  }
+};
 
   const handleBack = () => {
     navigate({
@@ -84,16 +66,15 @@ const FriendsList = () => {
           <p className="no-friends-message">No friends added yet.</p>
         ) : (
           <div className="friends-list">
-            {friends.map((friend, index) => (
+            {friends.map(friend => (
               <div
-                key={`${friend}-${index}`} // Ensure each item has a unique key
+                key={friend.id} // Ensure each item has a unique key
                 className="friend-chip"
                 onClick={() => {
-                  const [firstName, lastName] = friend.split(' '); // Split the full name into first and last names
-                  removeFriend(firstName, lastName); // Pass them to the removeFriend function
+                  onRemoveFriend(friend); // Pass them to the removeFriend function
                 }}
               >
-                {friend} {/* Display the full name */}
+                {friend.firstName} {friend.lastName}
                 <span className="remove-icon">×</span>
               </div>
             ))}

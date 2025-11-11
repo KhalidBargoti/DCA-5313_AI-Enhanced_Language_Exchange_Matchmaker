@@ -1,5 +1,5 @@
-import FriendsModel from'../models/FriendsModel';
-import friendsService from'../Service/friendsService';
+import FriendsModel from'../models/FriendsModel.js';
+import friendsService from'../Service/friendsService.js';
 let createFriends = async (req, res) => {
     let user1_ID = req.body.user1_ID;
     let user2_ID = req.body.user2_ID;
@@ -56,9 +56,10 @@ let addFriend = async (req, res) => {
     }
 };
 
-module.exports = {
+const friendsController = {
     createFriends: createFriends,
     findFriends: findFriends,
     findFriend: findFriend,
     addFriend: addFriend
-}
+};
+export default friendsController;

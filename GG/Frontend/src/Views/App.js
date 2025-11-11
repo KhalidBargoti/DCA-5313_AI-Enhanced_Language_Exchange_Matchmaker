@@ -22,6 +22,7 @@ import FriendSearch from '../Components/FriendSearch';
 import FriendsList from '../Components/FriendsList';
 import UserReport from '../Components/UserReport';
 import AvailabilityPicker from '../Components/AvailabilityPicker';
+import Assistant from "../Components/Assistant";
 
 const App = () => {
 
@@ -47,6 +48,7 @@ const App = () => {
           <Route path ="/HelpPage" element ={<HelpPage/>}/>
           <Route path="/FriendsList" element={<FriendsList/>}/>
           <Route path="/AvailabilityPicker" element={<AvailabilityPicker/>}/>
+          <Route path="/Assistant" element={<Assistant />} />
        </Routes>
       </Router>
 
