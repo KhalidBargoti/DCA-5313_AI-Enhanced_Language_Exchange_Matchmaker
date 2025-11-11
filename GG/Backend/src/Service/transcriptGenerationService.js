@@ -1,81 +1,72 @@
 const fs = require("fs");
 const path = require("path");
 const ffmpeg = require("fluent-ffmpeg");
-const { PassThrough } = require("stream");
+const { promisify } = require("util");
 
 const whisperBaseLocation = path.resolve("whisper.cpp");
-const factory = require(`${whisperBaseLocation}/bindings/javascript/whisper.js`);
+const { whisper } = require(path.join(whisperBaseLocation, "build/Release/addon.node.node"));
+const whisperAsync = promisify(whisper);
 
-function convertToPCM32Buffer(inputPath) {
+function convertToWav(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
-        const buffers = [];
-        const stream = new PassThrough();
-
         ffmpeg(inputPath)
             .outputOptions([
-                "-map", "0:a:0",
-                "-f", "f32le",           // raw float32
-                "-acodec", "pcm_f32le",  // 32-bit float codec
                 "-ac", "1",              // mono
-                "-ar", "16000"           // 16kHz sample rate (required by Whisper)
+                "-ar", "16000"           // 16kHz sample rate
             ])
+            .output(outputPath)
+            .on("end", () => resolve(outputPath))
             .on("error", reject)
-            .pipe(stream, { end: true });
-
-        stream.on("data", chunk => buffers.push(chunk));
-        stream.on("end", () => resolve(Buffer.concat(buffers)));
+            .run();
     });
 }
 
-async function whisper(filename) {
-    const whisper = await factory();
-
-    const fnameModel = `${whisperBaseLocation}/models/ggml-base.en.bin`;
-    const modelData = fs.readFileSync(fnameModel);
-
-    if (!modelData) throw new Error("Failed to read model file");
-    whisper.FS_createDataFile("/", "whisper.bin", modelData, true, true);
-
-    const ok = whisper.init("whisper.bin");
-    if (!ok) throw new Error("Failed to initialize Whisper model");
-
-    // --- Convert audio ---
-    console.log("Converting audio to PCM float32 in memory...");
-    const pcmBuffer = await convertToPCM32Buffer(filename);
-    if (!pcmBuffer || pcmBuffer.length === 0) {
-        throw new Error("ffmpeg returned empty PCM buffer");
+async function transcribeAudio(filename) {
+    const modelPath = path.join(whisperBaseLocation, "models", "ggml-base.en.bin");
+    
+    // Convert to WAV format that whisper expects
+    const tempWavPath = path.join(path.dirname(filename), `temp_${Date.now()}.wav`);
+    
+    try {
+        console.log("Converting audio to WAV format...");
+        await convertToWav(filename, tempWavPath);
+        
+        console.log("Starting transcription...");
+        const params = {
+            language: "en",
+            model: modelPath,
+            fname_inp: tempWavPath,
+            translate: false,
+            print_progress: false,
+            print_realtime: false,
+            print_timestamps: false,
+            progress_callback: (progress) => {
+                console.log(`Transcription progress: ${progress}%`);
+            }
+        };
+        
+        const result = await whisperAsync(params);
+        
+        // Clean up temp file
+        if (fs.existsSync(tempWavPath)) {
+            fs.unlinkSync(tempWavPath);
+        }
+        
+        return result;
+        
+    } catch (error) {
+        // Clean up temp file on error
+        if (fs.existsSync(tempWavPath)) {
+            fs.unlinkSync(tempWavPath);
+        }
+        throw error;
     }
-
-    if (pcmBuffer.length % 4 !== 0) {
-        console.warn("Warning: PCM buffer length not divisible by 4 — trimming to align");
-    }
-
-    const alignedLength = Math.floor(pcmBuffer.length / 4);
-    const pcm = new Float32Array(
-        pcmBuffer.buffer,
-        pcmBuffer.byteOffset,
-        alignedLength
-    );
-
-    console.log(`Loaded PCM length: ${pcm.length} samples`);
-
-    // --- Run transcription ---
-    const ret = whisper.full_default(pcm, "en", false);
-    if (ret !== 0) throw new Error("Whisper failed to transcribe");
-
-    const transcript = whisper.get_transcription_text
-        ? whisper.get_transcription_text()
-        : "(Binding does not expose get_transcription_text — output printed to stdout)";
-
-    whisper.free();
-
-    return transcript;
 }
 
 let handleGenerateTranscript = (filename) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const result = await whisper(filename);
+            const result = await transcribeAudio(filename);
             let message = {};
             message.errMessage = 'Transcript successfully created';
             message.data = result;
@@ -84,7 +75,7 @@ let handleGenerateTranscript = (filename) => {
             console.error(`Error generating transcript from video with filename ${filename}`, e);
             reject(e);
         }
-    })
+    });
 }
 
-module.exports = {handleGenerateTranscript}
+module.exports = { handleGenerateTranscript };
