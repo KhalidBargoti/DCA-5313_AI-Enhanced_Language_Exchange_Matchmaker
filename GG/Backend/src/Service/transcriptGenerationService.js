@@ -1,10 +1,19 @@
-const fs = require("fs");
-const path = require("path");
-const ffmpeg = require("fluent-ffmpeg");
-const { promisify } = require("util");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import ffmpeg from "fluent-ffmpeg";
+import { promisify } from "util";
+import { createRequire } from "module";
+
+// ES modules don't have __dirname, so we need to create it
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Use createRequire to load the native addon (it doesn't support ES modules)
+const require = createRequire(import.meta.url);
 
 const whisperBaseLocation = path.resolve("whisper.cpp");
-const { whisper } = require(path.join(whisperBaseLocation, "build/Release/addon.node.node"));
+const { whisper } = require(path.join(whisperBaseLocation, "build/Release/addon.node"));
 const whisperAsync = promisify(whisper);
 
 function convertToWav(inputPath, outputPath) {
@@ -81,4 +90,4 @@ let handleGenerateTranscript = (filename) => {
     });
 }
 
-module.exports = { handleGenerateTranscript };
+export { handleGenerateTranscript };

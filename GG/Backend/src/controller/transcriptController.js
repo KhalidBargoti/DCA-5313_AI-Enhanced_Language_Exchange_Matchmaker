@@ -1,14 +1,16 @@
-import transcriptGenerationService from '../Service/transcriptGenerationService';
+import { handleGenerateTranscript } from '../Service/transcriptGenerationService.js';
 
 let generateTranscript = async (req, res) => {
     let filename = req.params.filename;
-    let messageData = await transcriptGenerationService.handleGenerateTranscript(filename);
+    let messageData = await handleGenerateTranscript(filename);
     return res.status(200).json({
         message: messageData.errMessage,
         messageData: messageData.data ? messageData.data : {}
     });
 }
 
-module.exports = {
-    generateTranscript: generateTranscript
-}
+const transcriptController = {
+  generateTranscript
+};
+
+export default transcriptController;
