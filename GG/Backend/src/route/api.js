@@ -3,11 +3,7 @@ import APIController from "../controller/APIController.js";
 import interestController from "../controller/interestController.js";
 import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
-<<<<<<< HEAD
-=======
 import transcriptController from "../controller/transcriptController.js";
-//import userController from "../controller/userController.js";//added this
->>>>>>> main
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
