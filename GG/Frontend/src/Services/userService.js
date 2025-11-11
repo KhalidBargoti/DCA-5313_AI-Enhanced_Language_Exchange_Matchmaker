@@ -55,21 +55,21 @@ const handleDataPopulation = () => {
 
 const handleUpdateRating = (userId, rating) => {
     return axios.post('/api/v1/update-rating', {
-        user_id: userId,
+        id: userId,
         rating: rating
     });
 }
 
 const handleUpdateProficiency = (userId, proficiency) => {
     return axios.post('/api/v1/update-proficiency', {
-        user_id: userId,
+        id: userId,
         proficiency: proficiency
     });
 };
 
 const handleAddComment = (userId, comment) => {
     return axios.post('/api/v1/add-comment', {
-        user_id: userId,
+        id: userId,
         comment: comment
     });
 };

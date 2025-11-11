@@ -3,7 +3,6 @@ import APIController from "../controller/APIController.js";
 import interestController from "../controller/interestController.js";
 import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
-//import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
@@ -16,7 +15,6 @@ const initAPIRoute = (app) => {
     router.get('/users', APIController.getAllUsers); // method get
     router.post('/create-user', APIController.createNewUser); // method post
     router.put('/update-user', APIController.updateUser); // method put
-    //router.post('/update-profile', userController.handleUpdateUser);//added this
     router.delete('/delete-user/:id', APIController.deleteUser); // method delete
     router.get('/user-names', APIController.getUserNames); // GET method to fetch user names
     router.get('/user-preferences', APIController.getUserPreferences);

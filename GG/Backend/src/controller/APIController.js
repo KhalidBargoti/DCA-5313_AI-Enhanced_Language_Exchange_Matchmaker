@@ -1,5 +1,6 @@
 import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
+import UserProfile from '../models/UserProfile.js';
 
 //TOWNSHEND: getAllUsers may be the best way to sort users on a page since all data on a UserAccount is attached to the user
 // I can explore this more
@@ -143,21 +144,26 @@ let getUserProfile = async (req, res) => {
     }
 };
 
-let updateRating = async (req, res) => {
-    const { rating, user_id } = req.body;
-
-    if (rating === undefined || user_id === undefined) {
-        return res.status(400).json({ message: 'Missing rating or user_id parameter' });
+const updateRating = async (req, res) => {
+  try {
+    const { id, rating } = req.body;
+    if (!id || rating == null) {
+      return res.status(400).json({ error: 'Missing id or rating' });
     }
 
-    try {
-        const query = 'UPDATE UserProfile SET rating = ? WHERE id = ?';
-        await pool.execute(query, [rating, user_id]);
-        return res.status(200).json({ message: 'Rating updated successfully!' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Failed to update rating', error });
-    }
+    await pool.execute(
+      'UPDATE UserProfile SET rating = ? WHERE id = ?',
+      [rating, id]
+    );
+
+    return res.status(200).json({ message: 'Rating updated successfully' });
+  } catch (error) {
+    console.error('Error updating rating:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 };
+
+
 
 let updateProficiency = async (req, res) => {
     const { proficiency, user_id } = req.body;
@@ -176,20 +182,24 @@ let updateProficiency = async (req, res) => {
 };
 
 const addComment = async (req, res) => {
-    const { comment, user_id } = req.body;
-
-    if (!comment || !user_id) {
-        return res.status(400).json({ message: 'Missing comment or user_id parameter' });
+  try {
+    const { id, comment } = req.body;
+    if (!id || !comment) {
+      return res.status(400).json({ error: 'Missing id or comment' });
     }
 
-    try {
-        const query = 'UPDATE UserProfile SET comments = ? WHERE id = ?';
-        await pool.execute(query, [String(comment), user_id]);  // Explicitly cast comment to string
-        return res.status(200).json({ message: 'Comment added successfully!' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Failed to add comment', error });
-    }
+    await pool.execute(
+      'UPDATE UserProfile SET comment = ? WHERE id = ?',
+      [comment, id]
+    );
+
+    return res.status(200).json({ message: 'Comment added successfully' });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 };
+
 
 let getUserProficiencyAndRating = async (req, res) => {
     const userId = req.params.userId;

@@ -42,6 +42,14 @@ export default (sequelize, DataTypes) => {
     type: DataTypes.JSON,   // can store array of friend IDs
     allowNull: true
   },
+    rating: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    },
+    comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     visibility: DataTypes.STRING
   }, {
     sequelize,

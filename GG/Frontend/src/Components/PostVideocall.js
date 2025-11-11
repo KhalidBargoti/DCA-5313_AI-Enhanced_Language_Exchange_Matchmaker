@@ -149,32 +149,44 @@ function PostVideocall() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            console.log("Submitting rating:", rating, "proficiency:", targetLanguageProficiency, "and comment:", comment, "for user ID:", chatPartnerId);
-            
-            // Update rating
-            await handleUpdateRating(chatPartnerId, rating);
-            console.log("Rating updated successfully.");
-
-            // Update proficiency
-            await handleUpdateProficiency(chatPartnerId, targetLanguageProficiency);
-            console.log("Proficiency updated successfully.");
-
-            // Add comment
-            await handleAddComment(chatPartnerId, comment);
-            console.log("Comment added successfully.");
-
-            setSuccessMessage('Thanks for submitting a User Review!');
-
-            // Clear success message after 3 seconds
-            setTimeout(() => {
-                setSuccessMessage('');
-            }, 3000);
-        } catch (error) {
-            console.error("Failed to update rating, proficiency, or add comment:", error);
+     e.preventDefault();
+    try {
+        console.log("Submitting rating:", rating, "and comment:", comment, "for user ID:", chatPartnerId);
+        
+        if (!chatPartnerId) {
+            console.error('Chat partner ID is missing. Cannot submit rating/comment.');
+            return;
         }
-    };
+
+        if (rating < 1 || rating > 5) {
+            console.error('Invalid rating value:', rating);
+            return;
+        }
+
+        if (!comment || comment.trim() === '') {
+            console.warn('Comment is empty or whitespace');
+        }
+        
+        // Log the full payload objects you are sending
+        console.log('Payload for updateRating:', { id: chatPartnerId, rating });
+        await handleUpdateRating(chatPartnerId, rating);
+
+        console.log("Rating updated successfully.");
+
+        console.log('Payload for addComment:', { id: chatPartnerId, comment });
+        await handleAddComment(chatPartnerId, comment);
+
+        console.log("Comment added successfully.");
+
+        setSuccessMessage('Thanks for submitting a User Review!');
+
+        setTimeout(() => {
+            setSuccessMessage('');
+        }, 3000);
+    } catch (error) {
+        console.error("Failed to update rating or add comment:", error);
+    }
+};
 
     const handleBack = async (e) => {
         navigate({
@@ -201,7 +213,7 @@ function PostVideocall() {
                             />
                         </div>
 
-                        <div className="form-group">
+                        {/*<div className="form-group">
                             <label>Rank chat partner's proficiency in their target language</label>
                             <Select 
                                 className="form-group"
@@ -209,7 +221,7 @@ function PostVideocall() {
                                 options={TargetLanguageProficiency} 
                                 onChange={(selectedOption) => setTargetLanguageProficiency(selectedOption.value)} 
                             />
-                        </div>
+                        </div>*/}
 
                         <div className="form-group">
                             <label>Rate chat partner's ability as a study partner</label>
