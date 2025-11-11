@@ -21,8 +21,11 @@ function convertToWav(inputPath, outputPath) {
     });
 }
 
+// const modelName = "ggml-base.en.bin";
+const modelName = "ggml-medium.bin";
+
 async function transcribeAudio(filename) {
-    const modelPath = path.join(whisperBaseLocation, "models", "ggml-base.en.bin");
+    const modelPath = path.join(whisperBaseLocation, "models", modelName);
     
     // Convert to WAV format that whisper expects
     const tempWavPath = path.join(path.dirname(filename), `temp_${Date.now()}.wav`);
@@ -33,7 +36,7 @@ async function transcribeAudio(filename) {
         
         console.log("Starting transcription...");
         const params = {
-            language: "en",
+            language: "auto",
             model: modelPath,
             fname_inp: tempWavPath,
             translate: false,

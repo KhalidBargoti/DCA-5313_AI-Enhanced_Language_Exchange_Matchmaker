@@ -17,6 +17,8 @@ basedir = os.getcwd()
 whisper_basedir = os.path.join(basedir, "whisper.cpp")
 addon_path = os.path.join(whisper_basedir, "examples", "addon.node")
 model_path = os.path.join(whisper_basedir, "models")
+# model_name = "base.en"
+model_name = "medium"
 
 try:
     subprocess.run(["git", "clone", repo_url, whisper_basedir], check=True)
@@ -47,7 +49,7 @@ except subprocess.CalledProcessError as e:
 os.chdir(model_path)
 print(f"Install model from {model_path}")
 try:
-    subprocess.run(["./download-ggml-model.sh", "base.en"])
+    subprocess.run(["./download-ggml-model.sh", model_name])
 except subprocess.CalledProcessError as e:
     print(f"Error on model install: {e}")
     sys.exit(1)
