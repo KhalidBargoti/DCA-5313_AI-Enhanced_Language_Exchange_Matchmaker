@@ -1,5 +1,18 @@
+import { Model } from 'sequelize';
+
 export default (sequelize, DataTypes) => {
-  const TranscriptUser = sequelize.define('TranscriptUser', {
+  class TranscriptUser extends Model {
+    static associate(models) {
+      TranscriptUser.belongsTo(models.Transcript, { 
+        foreignKey: 'transcriptId' 
+      });
+      TranscriptUser.belongsTo(models.UserAccount, { 
+        foreignKey: 'userAccountId' 
+      });
+    }
+  }
+
+  TranscriptUser.init({
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -14,35 +27,27 @@ export default (sequelize, DataTypes) => {
         key: 'id'
       }
     },
-    userId: {
+    userAccountId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'UserAccount',
         key: 'id'
       }
     }
   }, {
+    sequelize,
+    modelName: 'TranscriptUser',
     tableName: 'TranscriptUsers',
-    timestamps: true,
     indexes: [
       {
         unique: true,
-        fields: ['transcriptId', 'userId'],
+        fields: ['transcriptId', 'userAccountId'],
         name: 'unique_transcript_user'
       }
     ]
   });
 
-  TranscriptUser.associate = (models) => {
-    TranscriptUser.belongsTo(models.Transcript, { 
-      foreignKey: 'transcriptId' 
-    });
-    
-    TranscriptUser.belongsTo(models.User, { 
-      foreignKey: 'userId' 
-    });
-  };
-
   return TranscriptUser;
 };
+

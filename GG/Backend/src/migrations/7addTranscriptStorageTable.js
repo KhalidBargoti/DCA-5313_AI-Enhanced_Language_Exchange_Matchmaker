@@ -44,11 +44,11 @@ export async function up(queryInterface, Sequelize) {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    userId: {
+    userAccountId: {
       type: Sequelize.INTEGER,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'UserAccount', // Reference to your existing UserAccount table
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -66,14 +66,14 @@ export async function up(queryInterface, Sequelize) {
 
   // Add composite unique constraint to prevent duplicate user-transcript pairs
   await queryInterface.addConstraint('TranscriptUsers', {
-    fields: ['transcriptId', 'userId'],
+    fields: ['transcriptId', 'userAccountId'],
     type: 'unique',
     name: 'unique_transcript_user'
   });
 
   // Add indexes for faster queries
   await queryInterface.addIndex('TranscriptUsers', ['transcriptId']);
-  await queryInterface.addIndex('TranscriptUsers', ['userId']);
+  await queryInterface.addIndex('TranscriptUsers', ['userAccountId']);
 }
 
 export async function down(queryInterface, Sequelize) {

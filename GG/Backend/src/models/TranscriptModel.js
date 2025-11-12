@@ -1,5 +1,24 @@
+import { Model } from 'sequelize';
+
 export default (sequelize, DataTypes) => {
-  const Transcript = sequelize.define('Transcript', {
+  class Transcript extends Model {
+    static associate(models) {
+      // Many-to-many relationship with UserAccount through TranscriptUser
+      Transcript.belongsToMany(models.UserAccount, {
+        through: models.TranscriptUser,
+        foreignKey: 'transcriptId',
+        otherKey: 'userAccountId',
+        as: 'userAccounts'
+      });
+
+      // Direct association to junction table
+      Transcript.hasMany(models.TranscriptUser, { 
+        foreignKey: 'transcriptId' 
+      });
+    }
+  }
+
+  Transcript.init({
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -22,22 +41,10 @@ export default (sequelize, DataTypes) => {
       }
     }
   }, {
-    tableName: 'Transcripts',
-    timestamps: true
+    sequelize,
+    modelName: 'Transcript',
+    tableName: 'Transcripts'
   });
-
-  Transcript.associate = (models) => {
-    Transcript.belongsToMany(models.User, {
-      through: models.TranscriptUser,
-      foreignKey: 'transcriptId',
-      otherKey: 'userId',
-      as: 'Users'
-    });
-
-    Transcript.hasMany(models.TranscriptUser, { 
-      foreignKey: 'transcriptId' 
-    });
-  };
 
   return Transcript;
 };

@@ -46,9 +46,9 @@ const initAPIRoute = (app) => {
     router.post('/users/:userId/availability', availabilityController.addAvailability);
     router.delete('/users/:userId/availability/:id', availabilityController.removeAvailability);
     router.put('/users/:userId/availability', availabilityController.replaceAvailability);
-
-    router.get('/transcript/:filename', transcriptController.generateTranscript);
-    router.post('/transcript/:filename', transcriptController.generateTranscript);
+    
+    router.post('/generateTranscript', transcriptController.generateTranscript);
+    router.get('/getTranscripts/:userId', transcriptController.getTranscripts);
   
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
 
