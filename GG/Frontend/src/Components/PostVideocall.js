@@ -6,6 +6,7 @@ import { handleGetAllUsersApi } from '../Services/findFriendsService';
 import Select from "react-select";
 import { handleUpdateRating, handleUpdateProficiency, handleAddComment, handleGetUser } from '../Services/userService';
 import { handleGetFriendsList, handleAddToFriendsList, handleGetProfile } from '../Services/userService'; // Import your API handler
+import { createChat } from '../Services/chatService.js';
 
 function PostVideocall() {
     const [friends, setFriends] = useState([]);
@@ -151,6 +152,12 @@ function PostVideocall() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            
+            console.log("Creating chat in database");
+            if (users.length >= 1) {
+                createChat(users[0].id, users[1].id);
+            }
+
             console.log("Submitting rating:", rating, "proficiency:", targetLanguageProficiency, "and comment:", comment, "for user ID:", chatPartnerId);
             
             // Update rating

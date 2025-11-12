@@ -51,6 +51,7 @@ const initAPIRoute = (app) => {
     router.get('/getTranscripts/:userId', transcriptController.getTranscripts);
   
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
+    router.put('/createChat/:senderId/:receiverId', chatController.createChat);
 
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
 

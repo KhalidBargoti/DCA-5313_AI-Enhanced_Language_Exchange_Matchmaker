@@ -2,6 +2,7 @@ import db from '../models/index.js';
 import { Op } from "sequelize";
 
 let handleChatModel = (senderId, receiverId) => {
+    console.log("BRUH");
     return new Promise(async (resolve, reject) => {
         try{
             let message = {};
