@@ -104,7 +104,7 @@ async function shouldUsePartnerMatching(userMessage) {
   } catch (error) {
     console.error("Error checking partner matching intent:", error);
     return false;
-  }c
+  }
 }
 
 /**
