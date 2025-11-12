@@ -81,7 +81,6 @@ export async function callPartnerMatching(userId, criteria = {}) {
 
 export async function callSummarizePracticeSession(chatId, requestingUserId) {
   // Ensure requestingUserId is a number
-
   const numericChatId = typeof chatId === 'string'
     ? parseInt(chatId, 10)
     : chatId;
@@ -108,9 +107,8 @@ export async function callSummarizePracticeSession(chatId, requestingUserId) {
     
     const args = {
       chatId,
-      requestingUserId: numericUserId,
+      userId: numericUserId,
     };
-    
     const result = await client.callTool({ 
       name: "summarizePracticeSession", 
       arguments: args 

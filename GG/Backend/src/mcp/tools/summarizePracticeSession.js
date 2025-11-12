@@ -18,9 +18,9 @@ export async function getTranscriptBySessionId(sessionId) {
   }
 }
 
-export async function summarizePracticeSessionTool(args) {
+export async function summarizePracticeSession(args) {
   try {
-    { chatId, userId } = args
+    const { chatId, userId } = args;
 
     // Retrieve the transcript from the database
     const transcript = await getTranscriptBySessionId(chatId);
@@ -34,7 +34,7 @@ export async function summarizePracticeSessionTool(args) {
 
     // Check if the requesting user has access to this transcript
     const hasAccess = transcript.userAccounts?.some(
-      user => user.id === requestingUserId
+      user => user.id === userId
     );
 
     if (!hasAccess) {
@@ -44,7 +44,7 @@ export async function summarizePracticeSessionTool(args) {
       };
     }
 
-    prompt = `Please provide a detailed summary of the following language practice session transcript. Include:
+    const prompt = `Please provide a detailed summary of the following language practice session transcript. Include:
 - Main topics discussed
 - Key vocabulary and phrases used
 - Grammar patterns observed
@@ -64,8 +64,6 @@ ${transcript.transcript}`;
         name: `${user.firstName} ${user.lastName}`,
         email: user.email
       })),
-      summaryType,
-      focusArea,
       prompt, // The MCP server will use this to call Claude
       transcriptLength: transcript.transcript.length
     };

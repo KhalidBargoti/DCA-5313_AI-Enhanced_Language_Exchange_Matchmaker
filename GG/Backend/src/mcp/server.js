@@ -2,6 +2,7 @@ import http from "http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { partnerMatching } from "./tools/partnerMatching.js";
+import { summarizePracticeSession } from "./tools/summarizePracticeSession.js";
 import { z } from "zod";
 
 export async function startMCPServer() {
@@ -27,14 +28,10 @@ export async function startMCPServer() {
     description: "Summarize a practice session conversation. Only works if AI access was allowed for the session.",
     inputSchema: {
       chatId: z.number(),
+      userId: z.number()
     },
   }, async (args) => {
-    // TODO: update once transcript generation is supported
-    // Returns a placeholder currently
-    return {
-      message: "SummarizePracticeSession tool is not yet implemented",
-      chatId: args.chatId,
-    };
+    return await summarizePracticeSession(args);
   });
 
   const httpServer = http.createServer();
