@@ -104,7 +104,7 @@ async function shouldUsePartnerMatching(userMessage) {
   } catch (error) {
     console.error("Error checking partner matching intent:", error);
     return false;
-  }
+  }c
 }
 
 /**
@@ -201,11 +201,12 @@ export async function chatWithAssistant(req, res) {
             await assertParticipant(chatId, numericUserId);
             await assertAIAllowed(chatId);
 
+            console.log(result);
             toolUsed = "summarizePracticeSession";
             const client = await createMcpClient();
             toolResult = await client.callTool({
               name: "summarizePracticeSession",
-              arguments: { chatId },
+              arguments: { chatId, numericUserId },
             });
             reply = formatToolResponse("summarizePracticeSession", toolResult);
           } catch (privacyError) {
@@ -310,6 +311,7 @@ export async function getConversation(req, res) {
 
     if (!userId) {
       return res.status(400).json({ error: "Missing userId" });
+            console.log(result);
     }
 
     // Ensure userId is a number

@@ -79,6 +79,53 @@ export async function callPartnerMatching(userId, criteria = {}) {
   }
 }
 
+export async function callSummarizePracticeSession(chatId, requestingUserId) {
+  // Ensure requestingUserId is a number
+
+  const numericChatId = typeof chatId === 'string'
+    ? parseInt(chatId, 10)
+    : chatId;
+  if (isNaN(chatId)) {
+      return {
+        error: "Invalid chatId provided",
+        details: `chatId must be a number, got ${chatId} (type: ${typeof chatId})`
+      };
+  }
+
+  const numericUserId = typeof requestingUserId === 'string' 
+    ? parseInt(requestingUserId, 10) 
+    : requestingUserId;
+  
+  if (isNaN(numericUserId)) {
+    return {
+      error: "Invalid requestingUserId provided",
+      details: `requestingUserId must be a number, got: ${requestingUserId} (type: ${typeof requestingUserId})`
+    };
+  }
+
+  try {
+    const client = await getMcpClient();
+    
+    const args = {
+      chatId,
+      requestingUserId: numericUserId,
+    };
+    
+    const result = await client.callTool({ 
+      name: "summarizePracticeSession", 
+      arguments: args 
+    });
+    
+    return result;
+  } catch (error) {
+    console.error("Error calling summarizePracticeSession tool:", error);
+    return {
+      error: "Failed to call summarizePracticeSession tool",
+      details: error.message
+    };
+  }
+}
+
 /**
  * Create a new MCP client (for summarizePracticeSession or other tools)
  * Note: This should ideally also use the singleton, but kept separate for now
