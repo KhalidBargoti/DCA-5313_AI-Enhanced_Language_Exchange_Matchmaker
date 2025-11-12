@@ -11,7 +11,7 @@ export default {
     await queryInterface.removeColumn('UserProfile', 'hobby');
   },
 
-  async up(queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     // Remove the new zodiac column
     await queryInterface.removeColumn('UserProfile', 'zodiac');
 
