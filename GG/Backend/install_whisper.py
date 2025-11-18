@@ -2,6 +2,32 @@ import subprocess
 import os
 import sys
 import platform
+import shutil
+
+if platform.system() == "Windows":
+
+    print("\nChecking Windows C++ build tools...\n")
+
+    cl = shutil.which("cl")
+    cmake = shutil.which("cmake")
+    nmake = shutil.which("nmake")
+
+    if cl and cmake:
+        print("✓ MSVC compiler detected.")
+        print(f"  cl.exe at: {cl}")
+        print(f"  cmake at: {cmake}")
+    else:
+        print("✗ C++ Build Tools NOT detected.\n")
+        print("You must install **Visual Studio 2022** or the **Build Tools** package:")
+        print(" ➤ https://visualstudio.microsoft.com/downloads/")
+        print("\nInstall the following components:")
+        print("   ✔ C++ x64/x86 Build Tools")
+        print("   ✔ Windows SDK")
+        print("   ✔ CMake tools for Windows")
+        print("   ✔ MSVC toolset")
+        print("\nAfter installation, restart your terminal.")
+        print("\nExiting because Whisper addon cannot compile without these tools.\n")
+        sys.exit(1)
 
 repo_url = "https://github.com/ggml-org/whisper.cpp.git"
 
