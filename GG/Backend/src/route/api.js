@@ -1,25 +1,55 @@
 import express from "express";
+import multer from "multer"; // Add this import
+import path from "path"; // Add this import
+import { fileURLToPath } from 'url'; // Add this for ES modules
 import APIController from "../controller/APIController.js";
 import interestController from "../controller/interestController.js";
 import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
 import transcriptController from "../controller/transcriptController.js";
-//import userController from "../controller/userController.js";//added this
 import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
+import recordingController from "../controller/recordingController.js"; // Add this
 
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let router = express.Router();
 
-//TOWNSHEND: added an additional router to get user names
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '../uploads/recordings');
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const userId = req.body.userId || 'unknown';
+    const uniqueName = `recording-${userId}-${timestamp}.webm`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'audio/webm' || file.mimetype === 'video/webm') {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only webm audio files are allowed.'));
+    }
+  }
+});
+
 const initAPIRoute = (app) => { 
-    router.get('/users', APIController.getAllUsers); // method get
-    router.post('/create-user', APIController.createNewUser); // method post
-    router.put('/update-user', APIController.updateUser); // method put
-    //router.post('/update-profile', userController.handleUpdateUser);//added this
-    router.delete('/delete-user/:id', APIController.deleteUser); // method delete
-    router.get('/user-names', APIController.getUserNames); // GET method to fetch user names
+    router.get('/users', APIController.getAllUsers);
+    router.post('/create-user', APIController.createNewUser);
+    router.put('/update-user', APIController.updateUser);
+    router.delete('/delete-user/:id', APIController.deleteUser);
+    router.get('/user-names', APIController.getUserNames);
     router.get('/user-preferences', APIController.getUserPreferences);
     router.post('/addFriend', APIController.addFriend);
     router.get('/getUserProfile/:userId', APIController.getUserProfile);
@@ -60,6 +90,9 @@ const initAPIRoute = (app) => {
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
     router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
     router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
+
+    // Recording route - ADD THIS
+    router.post('/upload-recording', upload.single('audio'), recordingController.uploadRecording);
 
     return app.use('/api/v1/', router)
 }
