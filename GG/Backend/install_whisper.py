@@ -1,6 +1,7 @@
 import subprocess
 import os
 import sys
+import platform
 
 repo_url = "https://github.com/ggml-org/whisper.cpp.git"
 
@@ -21,7 +22,7 @@ model_path = os.path.join(whisper_basedir, "models")
 model_name = "medium"
 
 try:
-    subprocess.run(["git", "clone", repo_url, whisper_basedir], check=True)
+    subprocess.run(["git", "clone", repo_url, whisper_basedir], check=True, shell=(platform.system() == "Windows"))
     print(f"Repository cloned successfully to: {whisper_basedir}")
 except subprocess.CalledProcessError as e:
     print(f"Error cloning repository: {e}")
@@ -33,7 +34,7 @@ except FileNotFoundError:
 os.chdir(addon_path)
 print(f"Running npm install in {addon_path}")
 try:
-    subprocess.run(["npm", "install"], check=True)
+    subprocess.run(["npm", "install"], check=True, shell=(platform.system() == "Windows"))
 except subprocess.CalledProcessError as e:
     print(f"Error doing npm install: {e}")
     sys.exit(1)
@@ -41,7 +42,7 @@ except subprocess.CalledProcessError as e:
 os.chdir(whisper_basedir)
 print(f"Running npx cmake-js compile -T addon.node -B Release in {whisper_basedir}")
 try:
-    subprocess.run(["npx", "cmake-js", "compile", "-T", "addon.node", "-B", "Release"], check=True)
+    subprocess.run(["npx", "cmake-js", "compile", "-T", "addon.node", "-B", "Release"], check=True, shell=(platform.system() == "Windows"))
 except subprocess.CalledProcessError as e:
     print(f"Error doing npx cmake-js: {e}")
     sys.exit(1)
@@ -49,7 +50,7 @@ except subprocess.CalledProcessError as e:
 os.chdir(model_path)
 print(f"Install model from {model_path}")
 try:
-    subprocess.run(["./download-ggml-model.sh", model_name])
+    subprocess.run(["./download-ggml-model.sh", model_name], check=True, shell=(platform.system() == "Windows"))
 except subprocess.CalledProcessError as e:
     print(f"Error on model install: {e}")
     sys.exit(1)
