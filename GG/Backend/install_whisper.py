@@ -50,7 +50,7 @@ except subprocess.CalledProcessError as e:
 os.chdir(model_path)
 print(f"Install model from {model_path}")
 try:
-    subprocess.run(["./download-ggml-model.sh", model_name], check=True, shell=(platform.system() == "Windows"))
+    subprocess.run(["download-ggml-model.sh", model_name], check=True, shell=(platform.system() == "Windows"))
 except subprocess.CalledProcessError as e:
     print(f"Error on model install: {e}")
     sys.exit(1)
