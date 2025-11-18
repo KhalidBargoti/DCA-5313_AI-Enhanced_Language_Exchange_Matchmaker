@@ -3,6 +3,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { VideoPlayer } from './VideoPlayer';
 import Button from 'react-bootstrap/Button';
 import { useNavigate, createSearchParams, useSearchParams } from 'react-router-dom';
+import { createChat } from '../Services/chatService.js';
 import './VideoRoom.css';
 
 const APP_ID = 'f314adc296d7440295289aa2502b2cb3';
@@ -154,6 +155,12 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const endCall = async () => {
+    console.log("ENDCALL CALLED");
+    console.log(users);
+    if (users.length >= 1) {
+        console.log("CREATECHAT CALLED");
+        createChat(users[0], users[1]);
+  }
     await cleanupCall(true);
     navigate({ pathname: '/PostVideocall', search: createSearchParams({ id }).toString() });
   };

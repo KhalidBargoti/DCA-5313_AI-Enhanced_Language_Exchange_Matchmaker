@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js";
 import aiAssistantService from "../Service/aiAssistantService.js";
-import { callPartnerMatching, createMcpClient } from "../mcp/client.js";
+import { callPartnerMatching, callSummarizePracticeSession, createMcpClient } from "../mcp/client.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -140,13 +140,13 @@ async function extractChatId(userMessage) {
   `;
 
   try {
-    const response = await model.generateContent(extractPrompt);
-    const text = response.response.text().trim();
-    const chatId = parseInt(text);
-    return isNaN(chatId) ? null : chatId;
+      const response = await model.generateContent(extractPrompt);
+      const text = response.response.text().trim();
+      const chatId = parseInt(text);
+      return isNaN(chatId) ? null : chatId;
   } catch (error) {
-    console.error("Error extracting chatId:", error);
-    return null;
+      console.error("Error extracting chatId:", error);
+      return null;
   }
 }
 
@@ -203,12 +203,11 @@ export async function chatWithAssistant(req, res) {
 
             toolUsed = "summarizePracticeSession";
             const client = await createMcpClient();
-            toolResult = await client.callTool({
-              name: "summarizePracticeSession",
-              arguments: { chatId },
-            });
-            reply = formatToolResponse("summarizePracticeSession", toolResult);
+            toolResult = await callSummarizePracticeSession(chatId, numericUserId);
+            const modelResponse = await model.generateContent(toolResult.prompt);
+            reply = modelResponse.response.text()
           } catch (privacyError) {
+            throw privacyError;
             reply = `I'm sorry, but I don't have permission to access that practice session. ${privacyError.message}`;
           }
         } else {
@@ -310,6 +309,7 @@ export async function getConversation(req, res) {
 
     if (!userId) {
       return res.status(400).json({ error: "Missing userId" });
+            console.log(result);
     }
 
     // Ensure userId is a number
