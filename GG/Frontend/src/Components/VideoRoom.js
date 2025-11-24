@@ -3,8 +3,8 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { VideoPlayer } from './VideoPlayer';
 import Button from 'react-bootstrap/Button';
 import { useNavigate, createSearchParams, useSearchParams } from 'react-router-dom';
-import { createChat } from '../Services/chatService.js';
 import './VideoRoom.css';
+import { uploadRecording as uploadRecordingService } from '../Services/uploadService.js';
 
 const APP_ID = 'f314adc296d7440295289aa2502b2cb3';
 const TOKEN = '007eJxTYPBjrLyfk1A8teLj+jV7979aeKRjbv5K0xeCHedEneLklJoUGNKMDU0SU5KNLM1SzE1MDIwsTY0sLBMTjUwNjJKMkpOMVXR4MxsCGRkCtquxMjJAIIjPzZCbWJKckZuYnZmXzsAAADbKIQY=';
@@ -18,6 +18,13 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   const [muted, setMuted] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [aiAllowed, setAiAllowed] = useState(initialAiAllowed);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const destinationRef = useRef(null);
+  const [recordingFilename, setRecordingFilename] = useState(null);
 
   const [search] = useSearchParams();
   const id = search.get('id') || currentUserId || '';
@@ -153,14 +160,142 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
       setAiAllowed(!next);
     }
   };
+  
+const startRecording = async () => {
+  try {
+    // Reset chunks
+    recordedChunksRef.current = [];
+    
+    // Create audio context for mixing
+    const audioContext = new AudioContext();
+    const destination = audioContext.createMediaStreamDestination();
+    
+    // Add local audio
+    if (localTracks[0]) {
+      const localSource = audioContext.createMediaStreamSource(
+        new MediaStream([localTracks[0].getMediaStreamTrack()])
+      );
+      localSource.connect(destination);
+    }
+    
+    // Add all remote users' audio
+    users.forEach(user => {
+      if (user.audioTrack && user.uid !== client.uid) {
+        const track = user.audioTrack.getMediaStreamTrack();
+        const source = audioContext.createMediaStreamSource(new MediaStream([track]));
+        source.connect(destination);
+      }
+    });
+    
+    // Record the mixed stream
+    const mediaRecorder = new MediaRecorder(destination.stream, { 
+      mimeType: 'audio/webm' 
+    });
+    
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedChunksRef.current.push(event.data);
+        console.log('Chunk added, total chunks:', recordedChunksRef.current.length);
+      }
+    };
+    
+    mediaRecorder.onstop = async () => {
+      console.log('Recording stopped, processing chunks:', recordedChunksRef.current.length);
+      
+      if (recordedChunksRef.current.length === 0) {
+        console.error('No recorded chunks available');
+        audioContext.close();
+        return;
+      }
+      
+      try {
+        // Create blob from recorded chunks
+        const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+        console.log('Blob created, size:', blob.size, 'bytes, type:', blob.type);
+        
+        // Verify it's a valid blob
+        if (blob.size === 0) {
+          console.error('Created blob is empty');
+          audioContext.close();
+          return;
+        }
+        
+        // Upload to server
+        await handleUploadRecording(blob);
+        
+      } catch (error) {
+        console.error('Error processing recording:', error);
+      } finally {
+        // Cleanup
+        recordedChunksRef.current = [];
+        audioContext.close();
+      }
+    };
+    
+    audioContextRef.current = audioContext;
+    destinationRef.current = destination;
+    mediaRecorderRef.current = mediaRecorder;
+    
+    mediaRecorder.start(1000); // Collect data every second
+    setIsRecording(true);
+    console.log('Recording started');
+  } catch (error) {
+    console.error('Failed to start recording:', error);
+  }
+};
+
+const handleUploadRecording = async (blob) => {
+  try {
+    console.log('handleUploadRecording called with blob:', blob);
+    console.log('Is Blob?', blob instanceof Blob);
+    console.log('Blob size:', blob?.size);
+    
+    // Verify blob is valid
+    if (!(blob instanceof Blob)) {
+      console.error('Invalid blob provided to handleUploadRecording', typeof blob);
+      return;
+    }
+
+    if (blob.size === 0) {
+      console.error('Blob is empty, not uploading');
+      return;
+    }
+
+    const formData = new FormData();
+    const filename = `call-${room}-${Date.now()}.webm`;
+    
+    // Append the blob with explicit filename
+    formData.append('audio', blob, filename);
+    formData.append('userId', id);
+    formData.append('chatId', chatId || '');
+    formData.append('room', room);
+    formData.append('timestamp', new Date().toISOString());
+    
+    console.log('Uploading recording, blob size:', blob.size, 'bytes');
+    
+    const response = await uploadRecordingService(formData);
+    
+    if (response && response.success) {
+      console.log('Recording saved successfully:', response);
+      setRecordingFilename(response.filename);
+      console.log('Local filename:', response.filename);
+      console.log('Local path:', response.localPath);
+    } else {
+      console.error('Upload failed: Invalid response structure');
+    }
+  } catch (error) {
+    console.error('Error uploading recording:', error);
+  }
+};
+
+const stopRecording = () => {
+  if (mediaRecorderRef.current && isRecording) {
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+  }
+};
 
   const endCall = async () => {
-    console.log("ENDCALL CALLED");
-    console.log(users);
-    if (users.length >= 1) {
-        console.log("CREATECHAT CALLED");
-        createChat(users[0], users[1]);
-  }
     await cleanupCall(true);
     navigate({ pathname: '/PostVideocall', search: createSearchParams({ id }).toString() });
   };
@@ -184,6 +319,9 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
           </Button>
           <Button className="vr-btn" variant="primary" onClick={toggleHideVideo}>
             {hidden ? 'Show Video' : 'Hide Video'}
+          </Button>
+          <Button className="vr-btn" variant={isRecording ? "danger" : "secondary"} onClick={isRecording ? stopRecording : startRecording}>
+          {isRecording ? '⏹ Stop Recording' : '⏺ Record'}
           </Button>
         </div>
         <div className="vr-right">
