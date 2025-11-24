@@ -15,7 +15,9 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const whisperBaseLocation = path.resolve("whisper.cpp");
-const { whisper } = require(path.join(whisperBaseLocation, "build/Release/addon.node"));
+const { whisper } = require(
+  path.join(whisperBaseLocation, "build/bin/Release/addon.node.node")
+);
 const whisperAsync = promisify(whisper);
 
 function convertToWav(inputPath, outputPath) {
