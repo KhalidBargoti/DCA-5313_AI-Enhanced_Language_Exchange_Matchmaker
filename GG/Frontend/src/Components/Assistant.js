@@ -6,10 +6,13 @@ import Button from "react-bootstrap/Button";
 import { handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation } from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
 import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
+import { saveConversationLocal, getAllConversations } from "../Utils/aiHistory";
 
 export default function Assistant() {
   const [search] = useSearchParams();
   const idFromUrl = search.get("id");
+  const [history, setHistory] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
 
   const [userId, setUserId] = useState(null);
@@ -20,6 +23,10 @@ export default function Assistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    setHistory(getAllConversations());
+  }, []);
 
   // Fetch current user ID from API
   useEffect(() => {
@@ -64,6 +71,10 @@ export default function Assistant() {
 
     fetchUserId();
   }, [idFromUrl]);
+
+  const loadConversationFromHistory = (chat) => {
+    setMessages(chat.messages);
+  };
 
   const loadConversation = useCallback(async () => {
     if (!userId) return;
@@ -177,28 +188,77 @@ export default function Assistant() {
     }
   };
 
-  return (
-    <div className="assistant-wrap">
+  const handleEndChat = () => {
+    saveConversationLocal(messages);
+    setHistory(getAllConversations()); // refresh sidebar
+  };
+
+return (
+  <div className="assistant-wrap">
+    <div className="assistant-layout">
+
+      {/* STATIC SIDEBAR – NO COLLAPSE */}
+      <div className="assistant-sidebar">
+        <div className="sidebar-header">
+          <h3>Conversations</h3>
+        </div>
+
+        <div className="sidebar-list">
+          {history.length === 0 && (
+            <p className="empty">No previous conversations</p>
+          )}
+
+          {history.map((chat) => (
+            <div
+              key={chat.id}
+              className="sidebar-item"
+              onClick={() => loadConversationFromHistory(chat)}
+            >
+              <strong>
+                {chat.title?.length
+                  ? chat.title
+                  : chat.messages?.[1]?.text?.slice(0, 40) || "Conversation"}
+              </strong>
+              <p style={{ fontSize: "12px", marginTop: "4px", color: "#777" }}>
+                {new Date(chat.timestamp).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* MAIN CHAT PANEL */}
       <div className="assistant-card">
         <div className="assistant-header">
           <div className="assistant-title">Chat Assistant</div>
-          <div className="assistant-meta">{userId ? `User ID: ${userId}` : ""}</div>
+          <div className="assistant-meta">
+            {userId ? `User ID: ${userId}` : ""}
+          </div>
         </div>
 
         {error && (
-          <div className="alert alert-warning" style={{ margin: "10px", padding: "8px" }}>
+          <div
+            className="alert alert-warning"
+            style={{ margin: "10px", padding: "8px" }}
+          >
             {error}
           </div>
         )}
 
         <div className="assistant-body" ref={scrollRef}>
           {messages.map((m, i) => (
-            <div key={i} className={`msg-row ${m.role === "user" ? "from-user" : "from-assistant"}`}>
+            <div
+              key={i}
+              className={`msg-row ${
+                m.role === "user" ? "from-user" : "from-assistant"
+              }`}
+            >
               <div className="msg-bubble">
                 <ReactMarkdown>{m.text}</ReactMarkdown>
               </div>
             </div>
           ))}
+
           {isLoading && (
             <div className="msg-row from-assistant">
               <div className="msg-bubble">Thinking...</div>
@@ -206,6 +266,7 @@ export default function Assistant() {
           )}
         </div>
 
+        {/* INPUT BAR */}
         <form className="assistant-inputbar" onSubmit={sendMessage}>
           <input
             className="assistant-input"
@@ -214,37 +275,46 @@ export default function Assistant() {
             placeholder="Message Chat Assistant…"
             disabled={isLoading || !userId}
           />
-          <Button type="submit" className="assistant-send" disabled={isLoading || !userId}>
+
+          <Button
+            type="submit"
+            className="assistant-send"
+            disabled={isLoading || !userId}
+          >
             {isLoading ? "Sending..." : "Send"}
           </Button>
         </form>
 
+        {/* FOOTER BUTTONS */}
         <div className="assistant-footer">
-          <Button variant="secondary" onClick={() => navigate(-1)} className="assistant-back">
+          <Button
+            variant="secondary"
+            onClick={() => navigate(-1)}
+            className="assistant-back"
+          >
             Back
           </Button>
-          {userId && (
-            <>
-              <Button 
-                variant="success" 
-                onClick={handleSave} 
-                className="assistant-save"
-                style={{ marginLeft: "10px" }}
-              >
-                Save Conversation
-              </Button>
-              <Button 
-                variant="danger" 
-                onClick={handleClear} 
-                className="assistant-clear"
-                style={{ marginLeft: "10px" }}
-              >
-                Clear Conversation
-              </Button>
-            </>
-          )}
+
+          <Button
+            variant="success"
+            onClick={handleEndChat}
+            className="assistant-save"
+            style={{ marginLeft: "10px" }}
+          >
+            Save to History
+          </Button>
+
+          <Button
+            variant="danger"
+            onClick={handleClear}
+            className="assistant-clear"
+            style={{ marginLeft: "10px" }}
+          >
+            Clear Conversation
+          </Button>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
