@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams, createSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import './AvailabilityPicker.css';
+import axios from 'axios';
 
 const AvailabilityPicker = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
+
+  const source = search.get('source') || 'friendSearch';
+  const returnTo = search.get('returnTo') || '/FriendSearch';
+
   const navigate = useNavigate();
   
   const [selectedSlots, setSelectedSlots] = useState(new Set());
   
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const timeSlots = [
     '8 am', '9 am', '10 am', '11 am', '12 pm', 
     '1 pm', '2 pm', '3 pm', '4 pm', '5 pm', 
@@ -29,41 +33,56 @@ const AvailabilityPicker = () => {
     }
     
     setSelectedSlots(newSelectedSlots);
+    console.log("Selected slots:", Array.from(newSelectedSlots));
   };
 
   // Handle confirm button 
-  const handleConfirm = () => {
-    // Convert selected slots to a format that can be passed back
+  const handleConfirm = async () => {
+    if (selectedSlots.size === 0) {
+      return alert("Please select at least one time slot before submitting.");
+    }
+
     const availabilityData = Array.from(selectedSlots).map(slot => {
-      const [dayIndex, timeIndex] = slot.split('-').map(Number);
-      return {
-        day: dayNames[dayIndex],
-        time: timeSlots[timeIndex],
-        dayIndex,
-        timeIndex
-      };
+    const [dayIndex, timeIndex] = slot.split('-').map(Number);
+      return { dayIndex, timeIndex };
     });
 
-    // Navigate back to FriendSearch with selected availability
-    navigate({
-      pathname: '/FriendSearch',
-      search: createSearchParams({
-        id: id,
-        availability: JSON.stringify(availabilityData)
-      }).toString(),
-    });
+    console.log("handleConfirm - availabilityData:", availabilityData);
+
+    if (!id) return alert("User ID missing");
+
+    if (source === "aiChat") {
+      try {
+        await axios.post("/api/v1/ai-assistant/availability", {
+          userId: Number(id),
+          slots: availabilityData
+        });
+        // Navigate after successful POST
+        navigate(returnTo || "/Assistant");
+      } catch (err) {
+        console.error("Failed to save availability", err);
+        alert("Failed to save availability. Please try again.");
+      }
+    } else {
+      // existing FriendSearch logic
+      const params = new URLSearchParams({
+        id,
+        availability: JSON.stringify(availabilityData),
+      });
+      navigate(`/FriendSearch?${params.toString()}`);
+    }
   };
 
   // Handle back button
   const handleBack = () => {
-    navigate({
-      pathname: '/FriendSearch',
-      search: createSearchParams({
-        id: id,
-      }).toString(),
-    });
+    if (source === "aiChat") {
+      navigate(returnTo || "/assistant");
+    } else {
+      const params = new URLSearchParams({ id });
+      navigate(`/FriendSearch?${params.toString()}`);
+    }
   };
-
+  
   return (
     <div className="availability-picker-container">
       <div className="availability-picker">

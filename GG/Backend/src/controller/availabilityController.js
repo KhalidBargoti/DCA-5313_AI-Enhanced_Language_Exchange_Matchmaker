@@ -44,6 +44,7 @@ let replaceAvailability = async (req, res) => {
     }
 }
 
+
 const availabilityController = { getAvailability, addAvailability, removeAvailability, replaceAvailability };
 export default availabilityController;
 

@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js";
 import aiAssistantService from "../Service/aiAssistantService.js";
 import { callPartnerMatching, callSummarizePracticeSession, createMcpClient } from "../mcp/client.js";
+import UserAvailability from "../models/userAvailabilityModel.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -326,3 +327,47 @@ export async function getConversation(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+const dayNames = [
+  "Sunday", "Monday", "Tuesday", "Wednesday",
+  "Thursday", "Friday", "Saturday"
+];
+
+const timeSlots = [
+  "08:00", "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00", "17:00",
+  "18:00", "19:00", "20:00"
+];
+
+export async function saveAvailabilityFromAiChat(req, res) {
+  try {
+    let { userId, slots } = req.body;
+    const numericUserId = Number(userId);
+
+    if (!numericUserId || !Array.isArray(slots) || slots.length === 0) {
+      return res.status(400).json({ error: "userId and non-empty slots array are required" });
+    }
+
+    // Delete previous AI availability if desired
+    await UserAvailability.destroy({ where: { user_id: numericUserId } });
+
+    // Save new slots
+    for (let slot of slots) {
+      const dayIndex = slot.dayIndex;
+      const timeIndex = slot.timeIndex;
+
+      await UserAvailability.create({
+        user_id: numericUserId,
+        day_of_week: dayNames[dayIndex],
+        start_time: timeSlots[timeIndex],
+        end_time: timeSlots[timeIndex + 1] || timeSlots[timeIndex]
+      });
+    }
+
+    return res.status(200).json({ message: "Availability saved" });
+  } catch (err) {
+    console.error("saveAvailabilityFromAiChat error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+

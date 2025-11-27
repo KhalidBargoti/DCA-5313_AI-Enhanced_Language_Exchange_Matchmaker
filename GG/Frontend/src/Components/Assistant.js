@@ -6,10 +6,14 @@ import Button from "react-bootstrap/Button";
 import { handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation } from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
 import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
+import axios from "axios";
 
 export default function Assistant() {
   const [search] = useSearchParams();
   const idFromUrl = search.get("id");
+
+  const availabilityParam = search.get("availability");
+
   const navigate = useNavigate();
 
   const [userId, setUserId] = useState(null);
@@ -98,6 +102,35 @@ export default function Assistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  const addSystemMessage = (text) => {
+  setMessages((m) => [...m, { role: "assistant", text }]);
+  };
+
+  useEffect(() => {
+    console.log("useEffect triggered with availabilityParam:", availabilityParam, "and userId:", userId);
+
+    if (!availabilityParam || !userId) return;
+
+    let slots;
+    try {
+      slots = JSON.parse(availabilityParam);
+    } catch (e) {
+      console.error("Failed to parse availability from query", e);
+      return;
+    }
+    if (!Array.isArray(slots) || slots.length === 0) return;
+
+    addSystemMessage(`You selected ${slots.length} availability slot(s).`);
+
+    axios.post("/api/v1/ai-assistant/availability", {
+      userId,
+      slots,
+    }).catch((err) => {
+      console.error("Error saving availability from AI chat", err);
+      setError("Failed to save availability from Availability Picker.");
+    });
+  }, [availabilityParam, userId]);
+
   const sendMessage = async (e) => {
     e.preventDefault();
     const trimmed = input.trim();
@@ -135,7 +168,7 @@ export default function Assistant() {
       setIsLoading(false);
     }
   };
-
+  
   const handleSave = async () => {
     if (!userId) {
       setError("User ID is required to save conversation.");
@@ -176,6 +209,21 @@ export default function Assistant() {
       alert(`Error: ${errorMessage}`);
     }
   };
+
+  const handleOpenAvailabilityPicker = () => {
+    if (!userId) {
+      setError("User ID is required before selecting availability.");
+      return;
+    }
+
+  const params = new URLSearchParams({
+    id: String(userId),
+    source: "aiChat",
+    returnTo: "/assistant",
+  });
+
+  navigate(`/AvailabilityPicker?${params.toString()}`);
+};
 
   return (
     <div className="assistant-wrap">
@@ -225,6 +273,14 @@ export default function Assistant() {
           </Button>
           {userId && (
             <>
+              <Button
+                variant="primary"
+                onClick={handleOpenAvailabilityPicker}
+                className="assistant-availability"
+                style={{ marginLeft: "10px" }}
+              >
+                Select Meeting Time
+              </Button>            
               <Button 
                 variant="success" 
                 onClick={handleSave} 
