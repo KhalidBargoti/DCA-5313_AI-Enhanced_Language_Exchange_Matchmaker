@@ -146,34 +146,65 @@ let getUserProfile = async (req, res) => {
 let updateRating = async (req, res) => {
     const { rating, user_id } = req.body;
 
-    if (rating === undefined || user_id === undefined) {
+    if (!rating || !user_id) {
         return res.status(400).json({ message: 'Missing rating or user_id parameter' });
     }
 
     try {
-        const query = 'UPDATE UserProfile SET rating = ? WHERE id = ?';
-        await pool.execute(query, [rating, user_id]);
-        return res.status(200).json({ message: 'Rating updated successfully!' });
+        // 1. Insert NEW rating into UserRatings table
+        const insertQuery = `
+            INSERT INTO UserRatings (userId, rating)
+            VALUES (?, ?)
+        `;
+        await pool.execute(insertQuery, [user_id, rating]);
+
+        // 2. Recalculate the user's average rating
+        const avgQuery = `
+            SELECT AVG(rating) AS avgRating
+            FROM UserRatings
+            WHERE userId = ?
+        `;
+        const [rows] = await pool.execute(avgQuery, [user_id]);
+
+        const average = rows[0].avgRating;
+
+        // 3. Update UserProfile with the new average
+        const updateProfileQuery = `
+            UPDATE UserProfile
+            SET rating = ?
+            WHERE id = ?
+        `;
+        await pool.execute(updateProfileQuery, [average, user_id]);
+
+        return res.status(200).json({
+            message: "Rating added and average updated!",
+            average: average,
+        });
+
     } catch (error) {
-        return res.status(500).json({ message: 'Failed to update rating', error });
+        console.error(error);
+        return res.status(500).json({
+            message: "Failed to update rating",
+            error,
+        });
     }
 };
 
-let updateProficiency = async (req, res) => {
-    const { proficiency, user_id } = req.body;
+// let updateProficiency = async (req, res) => {
+//     const { proficiency, user_id } = req.body;
 
-    if (proficiency === undefined || user_id === undefined) {
-        return res.status(400).json({ message: 'Missing proficiency or user_id parameter' });
-    }
+//     if (proficiency === undefined || user_id === undefined) {
+//         return res.status(400).json({ message: 'Missing proficiency or user_id parameter' });
+//     }
 
-    try {
-        const query = 'UPDATE UserProfile SET proficiency = ? WHERE id = ?';
-        await pool.execute(query, [proficiency, user_id]);
-        return res.status(200).json({ message: 'Proficiency updated successfully!' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Failed to update proficiency', error });
-    }
-};
+//     try {
+//         const query = 'UPDATE UserProfile SET proficiency = ? WHERE id = ?';
+//         await pool.execute(query, [proficiency, user_id]);
+//         return res.status(200).json({ message: 'Proficiency updated successfully!' });
+//     } catch (error) {
+//         return res.status(500).json({ message: 'Failed to update proficiency', error });
+//     }
+// };
 
 const addComment = async (req, res) => {
     const { comment, user_id } = req.body;
@@ -199,7 +230,7 @@ let getUserProficiencyAndRating = async (req, res) => {
         });
     }
     try {
-        const [rows] = await pool.execute('SELECT proficiency, rating FROM UserProfile WHERE id = ?', [userId]);
+        const [rows] = await pool.execute('SELECT target_language_proficiency, rating FROM UserProfile WHERE id = ?', [userId]);
         if (rows.length > 0) {
             return res.status(200).json({
                 message: 'ok',
@@ -332,25 +363,26 @@ let removeFriend = async (req, res) => {
 let addTrueFriend = async (req, res) => {
 
     try {
-    let { userId1, userId2 } = req.body;
-    userId1 = Number(userId1);
-    userId2 = Number(userId2);
+      console.log('addTrueFriend hit with body:', req.body);
+      let { userId1, userId2 } = req.body;
+      userId1 = Number(userId1);
+      userId2 = Number(userId2);
 
-    if (!userId1 || !userId2) {
-      return res.status(400).json({ error: 'userId1 and userId2 are required' });
-    }
-    if (userId1 === userId2) {
-      return res.status(400).json({ error: 'Cannot friend yourself' });
-    }
+      if (!userId1 || !userId2) {
+        return res.status(400).json({ error: 'userId1 and userId2 are required' });
+      }
+      if (userId1 === userId2) {
+        return res.status(400).json({ error: 'Cannot friend yourself' });
+      }
 
-    const a = Math.min(userId1, userId2);
-    const b = Math.max(userId1, userId2);
+      const a = Math.min(userId1, userId2);
+      const b = Math.max(userId1, userId2);
 
-    // Insert (handle duplicates)
-    const sql = 'INSERT INTO friendsmodel (user1_id, user2_id) VALUES (?, ?)';
-    await pool.execute(sql, [a, b]);
+      // Insert (handle duplicates)
+      const sql = 'INSERT INTO friendsmodel (user1_id, user2_id) VALUES (?, ?)';
+      await pool.execute(sql, [a, b]);
 
-    return res.status(201).json({ message: 'Friend added', user_one_id: a, user_two_id: b });
+      return res.status(201).json({ message: 'Friend added', user_one_id: a, user_two_id: b });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Friendship already exists' });
@@ -405,7 +437,7 @@ let getTrueFriendsList = async (req, res) => {
     // Convert BinaryRows → plain objects
     const friends = rows.map(r => ({ ...r }));
 
-    console.log('Final plain friends list:', friends);
+    //console.log('Final plain friends list:', friends);
     return res.status(200).json({ friendsList: friends });
   } catch (err) {
     console.error('Error retrieving friends:', err);
@@ -414,6 +446,6 @@ let getTrueFriendsList = async (req, res) => {
 };
 
 const APIController = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList // added getUserNames as an export
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList // added getUserNames as an export
 };
 export default APIController;

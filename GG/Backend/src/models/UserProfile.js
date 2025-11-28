@@ -38,10 +38,11 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'UTC'
     },
-    friends_list: {
-    type: DataTypes.JSON,   // can store array of friend IDs
-    allowNull: true
-  },
+      rating: {
+      type: DataTypes.INTEGER,   // stores the average rating of a user
+      allowNull: true
+    },
+      
     visibility: DataTypes.STRING
   }, {
     sequelize,

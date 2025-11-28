@@ -51,9 +51,9 @@ export default {
             allowNull: true,
             type: Sequelize.STRING
         },
-        friends_list: {                
+        rating: {                
             allowNull: true,
-            type: Sequelize.JSON         
+            type: Sequelize.INTEGER         
         },
         createdAt: {
             allowNull: false,
