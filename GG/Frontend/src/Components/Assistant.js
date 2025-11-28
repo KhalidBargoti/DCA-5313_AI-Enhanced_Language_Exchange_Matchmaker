@@ -177,6 +177,20 @@ export default function Assistant() {
     }
   };
 
+  useEffect(() => {
+    const slotsAdded = search.get("slotsAdded");
+    if (slotsAdded) {
+      setMessages(m => [
+        ...m,
+        {
+          role: "assistant",
+          text: `You added ${slotsAdded} to your availability.`
+        }
+      ]);
+    }
+  }, [search]);
+
+
   return (
     <div className="assistant-wrap">
       <div className="assistant-card">
@@ -230,10 +244,10 @@ export default function Assistant() {
                 style={{ marginLeft: "10px" }}
                 onClick={() => {
                   console.log("Navigating to AvailabilityPicker for userId:", userId);
-                  navigate(`/AvailabilityPicker?id=${userId}`);
+                  navigate(`/AvailabilityPicker?id=${userId}&returnTo=Assistant`);
                 }}
               >
-                Select Meeting Time
+                Select Meeting Time(s)
               </Button>
               <Button 
                 variant="success" 

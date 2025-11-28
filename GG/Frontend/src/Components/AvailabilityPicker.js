@@ -41,31 +41,44 @@ const AvailabilityPicker = () => {
       alert("User ID is missing. Cannot save availability.");
       return;
     }
-    const timeSlots = [
-      '08:00','09:00','10:00','11:00','12:00',
-      '13:00','14:00','15:00','16:00','17:00',
-      '18:00','19:00','20:00'
-    ];
-    // Convert selected slots to a format that can be passed back
     const availabilityData = Array.from(selectedSlots).map(slot => {
       const [dayIndex, timeIndex] = slot.split('-').map(Number);
       return {
-        day_of_week: dayNames[dayIndex],
-        start_time: timeSlots[timeIndex],
-        end_time: timeSlots[timeIndex]
+        day: dayNames[dayIndex],
+        time: timeSlots[timeIndex],
+        dayIndex,
+        timeIndex
+      };
+    });
+    const convertTo24Hour = (timeStr) => {
+      const [hour, modifier] = timeStr.split(' ');
+      let h = parseInt(hour);
+      if (modifier === 'pm' && h !== 12) h += 12;
+      if (modifier === 'am' && h === 12) h = 0;
+      return h.toString().padStart(2,'0') + ':00';
+    };
+    const backendPayload = availabilityData.map(slot => {
+      const time24 = convertTo24Hour(slot.time); // helper to convert '8 am' → '08:00'
+      return {
+        day_of_week: slot.day,
+        start_time: time24,
+        end_time: time24
       };
     });
     console.log("Submitting availability for userId:", id, availabilityData);
-    await axios.post(`http://localhost:8080/api/v1/users/${id}/availability`, {'slots': availabilityData});
+    await axios.post(`http://localhost:8080/api/v1/users/${id}/availability`, {'slots': backendPayload});
     // Navigate back to FriendSearch with selected availability
-    //In the event that the user selects a meeting time in the AI chat, I have have it return to the chat, not Friend Search
-    navigate({
-      pathname: `/${returnTo}`,
-      search: createSearchParams({
-        id: id,
-        availability: JSON.stringify(availabilityData)
-      }).toString()
-    });
+    //In the event that the user selects a meeting time in the AI chat, they return to the chat not Friend Search
+    const returnTo = search.get("returnTo");
+    if (returnTo === "Assistant") {
+      const slotDescriptions = availabilityData.map(slot => `${slot.day} ${slot.time}`).join(", ");
+      navigate(`/Assistant?id=${id}&slotsAdded=${encodeURIComponent(slotDescriptions)}`);
+    } else {
+      navigate({
+        pathname: '/FriendSearch',
+        search: `id=${id}&availability=${encodeURIComponent(JSON.stringify(availabilityData))}`
+      });
+    }
   };
 
   // Handle back button
