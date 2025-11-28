@@ -225,6 +225,14 @@ export default function Assistant() {
           </Button>
           {userId && (
             <>
+              <Button
+                variant="primary"
+                onClick={() => navigate(`/AvailabilityPicker?id=${userId}&source=aiChat&returnTo=Assistant`)}
+                className="assistant-availability"
+                style={{ marginLeft: "10px" }}
+              >
+                Select Meeting Time
+              </Button>
               <Button 
                 variant="success" 
                 onClick={handleSave} 

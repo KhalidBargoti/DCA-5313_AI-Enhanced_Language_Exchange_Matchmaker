@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, createSearchParams } from 'react-router-dom';
 import './AvailabilityPicker.css';
+import axios from 'axios';
+
+
 
 const AvailabilityPicker = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const navigate = useNavigate();
+  const returnTo = search.get('returnTo') || 'FriendSearch';
   
   const [selectedSlots, setSelectedSlots] = useState(new Set());
   
@@ -32,7 +36,7 @@ const AvailabilityPicker = () => {
   };
 
   // Handle confirm button 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // Convert selected slots to a format that can be passed back
     const availabilityData = Array.from(selectedSlots).map(slot => {
       const [dayIndex, timeIndex] = slot.split('-').map(Number);
@@ -43,10 +47,10 @@ const AvailabilityPicker = () => {
         timeIndex
       };
     });
-
+    await axios.post(`/api/v1/users/${id}/availability`, availabilityData);
     // Navigate back to FriendSearch with selected availability
     navigate({
-      pathname: '/FriendSearch',
+      pathname: `/${returnTo}`,
       search: createSearchParams({
         id: id,
         availability: JSON.stringify(availabilityData)
@@ -57,7 +61,7 @@ const AvailabilityPicker = () => {
   // Handle back button
   const handleBack = () => {
     navigate({
-      pathname: '/FriendSearch',
+      pathname: `/${returnTo}`,
       search: createSearchParams({
         id: id,
       }).toString(),
