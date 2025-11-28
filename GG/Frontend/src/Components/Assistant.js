@@ -227,9 +227,11 @@ export default function Assistant() {
             <>
               <Button
                 variant="primary"
-                onClick={() => navigate(`/AvailabilityPicker?id=${userId}&source=aiChat&returnTo=Assistant`)}
-                className="assistant-availability"
                 style={{ marginLeft: "10px" }}
+                onClick={() => {
+                  console.log("Navigating to AvailabilityPicker for userId:", userId);
+                  navigate(`/AvailabilityPicker?id=${userId}`);
+                }}
               >
                 Select Meeting Time
               </Button>
