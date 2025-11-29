@@ -247,7 +247,7 @@ export default function Assistant() {
                   navigate(`/AvailabilityPicker?id=${userId}&returnTo=Assistant`);
                 }}
               >
-                Select Meeting Time(s)
+                Select Availability
               </Button>
               <Button 
                 variant="success" 
