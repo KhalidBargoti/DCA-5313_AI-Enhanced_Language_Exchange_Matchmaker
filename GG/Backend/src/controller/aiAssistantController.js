@@ -326,3 +326,48 @@ export async function getConversation(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function getAllAIChats(req, res) {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    // Ensure userId is a number
+    const numericUserId = typeof userId === "string" ? parseInt(userId, 10) : userId;
+    if (isNaN(numericUserId)) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
+    // Fetch previous AI conversations
+    const result = await aiAssistantService.handleGetAIChats(numericUserId);
+
+    // Parse JSON string conversations into objects
+    const parsedChats = result.data.map((chat) => {
+      let parsedConversation;
+      try {
+        parsedConversation = JSON.parse(chat.conversation);
+      } catch (err) {
+        parsedConversation = chat.conversation; // fallback
+      }
+
+      return {
+        id: chat.id,
+        userId: chat.userId,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        conversation: parsedConversation,
+      };
+    });
+
+    return res.json({
+      message: result.errMessage,
+      chats: parsedChats,
+    });
+  } catch (err) {
+    console.error("getAllAIChats error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
