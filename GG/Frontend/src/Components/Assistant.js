@@ -3,10 +3,9 @@ import ReactMarkdown from "react-markdown";
 import "./Assistant.css";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Button from "react-bootstrap/Button";
-import { handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation } from "../Services/aiAssistantService";
+import { handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation, handleGetAllAIChats } from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
 import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
-import { saveConversationLocal, getAllConversations } from "../Utils/aiHistory";
 
 export default function Assistant() {
   const [search] = useSearchParams();
@@ -23,10 +22,6 @@ export default function Assistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
-
-  useEffect(() => {
-    setHistory(getAllConversations());
-  }, []);
 
   // Fetch current user ID from API
   useEffect(() => {
@@ -72,7 +67,59 @@ export default function Assistant() {
     fetchUserId();
   }, [idFromUrl]);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchHistory = async () => {
+      try {
+        const result = await handleGetAllAIChats(userId);
+        const chats = result.chats || [];
+        
+        const formatted = chats.map((chat) => {
+          let conversationArray = chat.conversation;
+          
+          // Handle different possible structures
+          if (typeof conversationArray === 'string') {
+            try {
+              conversationArray = JSON.parse(conversationArray);
+            } catch (e) {
+              conversationArray = [];
+            }
+          }
+          
+          if (conversationArray && conversationArray.conversation) {
+            conversationArray = conversationArray.conversation;
+          }
+          if (!Array.isArray(conversationArray)) {
+            conversationArray = [];
+          }
+  
+          // Get the first user message for the title
+          const firstMessage = conversationArray.find(msg => msg.role === 'user') || conversationArray[0];
+          const title = firstMessage?.content?.slice(0, 40) || "Conversation";
+  
+          return {
+            id: chat.id,
+            timestamp: chat.createdAt,
+            title: title,
+            messages: conversationArray.map((msg) => ({
+              role: msg.role,
+              text: msg.content,
+            }))
+          };
+        });
+
+        setHistory(formatted);
+      } catch (err) {
+        console.error("Failed to load chat history:", err);
+      }
+    };
+  
+    fetchHistory();
+  }, [userId]);
+
   const loadConversationFromHistory = (chat) => {
+    if (!chat || !chat.messages) return;
     setMessages(chat.messages);
   };
 
@@ -188,11 +235,6 @@ export default function Assistant() {
     }
   };
 
-  const handleEndChat = () => {
-    saveConversationLocal(messages);
-    setHistory(getAllConversations()); // refresh sidebar
-  };
-
 return (
   <div className="assistant-wrap">
     <div className="assistant-layout">
@@ -214,11 +256,7 @@ return (
               className="sidebar-item"
               onClick={() => loadConversationFromHistory(chat)}
             >
-              <strong>
-                {chat.title?.length
-                  ? chat.title
-                  : chat.messages?.[1]?.text?.slice(0, 40) || "Conversation"}
-              </strong>
+              <strong>{chat.title || "Conversation"}</strong>
               <p style={{ fontSize: "12px", marginTop: "4px", color: "#777" }}>
                 {new Date(chat.timestamp).toLocaleString()}
               </p>
@@ -297,7 +335,7 @@ return (
 
           <Button
             variant="success"
-            onClick={handleEndChat}
+            onClick={handleSave}
             className="assistant-save"
             style={{ marginLeft: "10px" }}
           >
