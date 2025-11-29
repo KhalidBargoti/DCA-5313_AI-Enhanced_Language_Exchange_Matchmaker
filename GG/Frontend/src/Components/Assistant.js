@@ -22,9 +22,6 @@ export default function Assistant() {
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
 
-  // --------------------------------------------------
-  // Fetch and validate user ID
-  // --------------------------------------------------
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -45,7 +42,6 @@ export default function Assistant() {
           }
         }
 
-        // Fallback (not ideal, but kept for compatibility)
         const prefs = await handleGetUserPreferencesApi();
         if (!prefs?.data?.length) {
           setError("User ID is required in the URL.");
@@ -59,9 +55,7 @@ export default function Assistant() {
     fetchUserId();
   }, [idFromUrl]);
 
-  // --------------------------------------------------
   // Load all conversation history for sidebar
-  // --------------------------------------------------
   useEffect(() => {
     if (!userId) return;
 
@@ -109,9 +103,6 @@ export default function Assistant() {
     fetchHistory();
   }, [userId]);
 
-  // --------------------------------------------------
-  // Load the LAST active conversation into the chat panel
-  // --------------------------------------------------
   const loadConversation = useCallback(async () => {
     if (!userId) return;
 
@@ -143,17 +134,11 @@ export default function Assistant() {
     });
   }, [messages]);
 
-  // --------------------------------------------------
-  // Clicking a history item loads its messages
-  // --------------------------------------------------
   const loadConversationFromHistory = chat => {
     if (!chat?.messages) return;
     setMessages(chat.messages);
   };
 
-  // --------------------------------------------------
-  // Sending a message
-  // --------------------------------------------------
   const sendMessage = async (e) => {
     e.preventDefault();
     const trimmed = input.trim();
@@ -178,9 +163,6 @@ export default function Assistant() {
     }
   };
 
-  // --------------------------------------------------
-  // Saving conversation
-  // --------------------------------------------------
   const handleSave = async () => {
     if (!userId) return;
 
@@ -225,9 +207,6 @@ export default function Assistant() {
     }
   };
 
-  // --------------------------------------------------
-  // Clearing conversation
-  // --------------------------------------------------
   const handleClear = async () => {
     if (!userId) return;
 
@@ -244,9 +223,6 @@ export default function Assistant() {
     }
   };
 
-  // --------------------------------------------------
-  // UI layout
-  // --------------------------------------------------
   return (
     <div className="assistant-wrap">
       <div className="assistant-layout">
