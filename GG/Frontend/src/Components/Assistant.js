@@ -180,7 +180,6 @@ export default function Assistant() {
 
   // --------------------------------------------------
   // Saving conversation
-  // → Now INSTANTLY updates the sidebar
   // --------------------------------------------------
   const handleSave = async () => {
     if (!userId) return;
@@ -188,7 +187,6 @@ export default function Assistant() {
     try {
       await handleSaveConversation(userId);
 
-      // INSTANT optimistic sidebar update
       const newItem = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
