@@ -90,6 +90,7 @@ const initAPIRoute = (app) => {
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
     router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
     router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
+    router.get('/ai-assistant/history/:userId', aiAssistantController.getAllAIChats);
 
     // Recording route - ADD THIS
     router.post('/upload-recording', upload.single('audio'), recordingController.uploadRecording);
