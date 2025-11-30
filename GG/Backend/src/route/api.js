@@ -11,6 +11,7 @@ import chatController from "../controller/chatController.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
 import recordingController from "../controller/recordingController.js"; // Add this
+import { getMeetingsForUser } from "../controller/meetingController.js";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +46,7 @@ const upload = multer({
 });
 
 const initAPIRoute = (app) => { 
+    router.get("/meetings/:userId", getMeetingsForUser);
     router.get('/users', APIController.getAllUsers);
     router.post('/create-user', APIController.createNewUser);
     router.put('/update-user', APIController.updateUser);
@@ -63,6 +65,11 @@ const initAPIRoute = (app) => {
     router.post('/addTrueFriend', APIController.addTrueFriend);
     router.delete('/removeTrueFriend', APIController.removeTrueFriend);
     router.get('/friends/:userId', APIController.getTrueFriendsList);
+
+    router.get("/api/availability/:userId", APIController.getUserAvailability);
+
+    router.post('/createMeeting', APIController.createMeeting);
+    router.delete('/deleteMeeting', APIController.deleteMeeting);
 
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);
