@@ -297,7 +297,7 @@ export default function Assistant() {
           </form>
 
           <div className="assistant-footer">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+            <Button variant="secondary" onClick={() => navigate("/Dashboard")}>
               Back
             </Button>
             <Button
