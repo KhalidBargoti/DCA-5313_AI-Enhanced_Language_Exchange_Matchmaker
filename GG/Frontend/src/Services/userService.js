@@ -157,6 +157,20 @@ export const handleGetUserProficiencyAndRating = async (userId) => {
     }
 };
 
+export const handleGetTrueUserAvailability = (userId) => {
+  return axios.get(`/api/v1/users/${userId}/availability`);
+  // this directly resolves to { availability: [...] }
+};
+
+export const handleCreateMeeting = (user1_id, user2_id, day_of_week, start_time, end_time) =>
+  axios.post("/api/v1/createMeeting", {
+    user1_id,
+    user2_id,
+    day_of_week,
+    start_time,
+    end_time
+  });
+
 
 export {
         handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleProfileUpdateAPI, handleChatApi, 

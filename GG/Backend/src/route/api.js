@@ -64,6 +64,10 @@ const initAPIRoute = (app) => {
     router.delete('/removeTrueFriend', APIController.removeTrueFriend);
     router.get('/friends/:userId', APIController.getTrueFriendsList);
 
+    router.get("/api/availability/:userId", APIController.getUserAvailability);
+
+    router.post('/createMeeting', APIController.createMeeting);
+
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);
 
