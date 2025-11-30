@@ -2,8 +2,6 @@ import db from "../models/index.js";
 import { Op } from "sequelize";
 
 export const getMeetingsForUser = async (req, res) => {
-  console.log("🔎 db keys:", Object.keys(db));
-  console.log("🔎 db.Meeting:", db.Meeting);
 
   try {
     const userId = req.params.userId;
