@@ -59,7 +59,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: 'Meeting',
-      tableName: 'Meetings',
+      tableName: 'meetingmodel',
       timestamps: true,     // createdAt + updatedAt
       underscored: true
     }

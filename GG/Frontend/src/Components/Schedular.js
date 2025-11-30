@@ -1,48 +1,68 @@
 import React, { useEffect, useState } from 'react';
-import Button from 'react-bootstrap/Button';
 import './Schedular.css';
 import { useNavigate, createSearchParams, useSearchParams } from "react-router-dom";
-import { handleGetFriendsList, handleCreateMeeting, handleGetTrueFriendsList, handleRemoveTrueFriend, handleAddToFriendsList, handleGetTrueUserAvailability } from '../Services/userService'; // Import your API handler
+
+import { 
+  handleGetTrueFriendsList, 
+  handleCreateMeeting, 
+  handleGetTrueUserAvailability,
+  handleGetMeetings
+} from '../Services/userService';
 
 const Schedular = () => {
   const [friends, setFriends] = useState([]);
+  const [meetings, setMeetings] = useState([]);
+
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const id = search.get("id");
-  
+
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
 
-  useEffect(() => {
-    // Retrieve friends from localStorage
-    const storedFriends = JSON.parse(localStorage.getItem('friendsList')) || [];
-    //setFriends(storedFriends);
-    console.log("Friends loaded from localStorage:", storedFriends);
-  }, []);
 
-  // Second useEffect: Fetch friends from the database
-  useEffect(() => {
-  const fetchFriends = async () => {
-    try {
-      console.log('FriendsList: id=', id);
-      const payload = await handleGetTrueFriendsList(id);
-      console.log('FriendsList payload:', payload); // expect { friendsList: [...] }
-      setFriends(Array.isArray(payload?.friendsList) ? payload.friendsList : []);
-    } catch (err) {
-      console.error('Failed to fetch friends:', err);
-      setFriends([]);
-    }
+  const getFriendName = (userId) => {
+    const friend = friends.find(f => f.id === userId);
+    if (!friend) return "Unknown User";
+    return `${friend.firstName} ${friend.lastName}`;
   };
-  if (id) fetchFriends();
-}, [id]); // Dependencies: id and friends state
+
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const payload = await handleGetTrueFriendsList(id);
+        setFriends(Array.isArray(payload?.friendsList) ? payload.friendsList : []);
+      } catch (err) {
+        console.error("Failed to fetch friends:", err);
+        setFriends([]);
+      }
+    };
+
+    if (id) fetchFriends();
+  }, [id]);
+
+
+  useEffect(() => {
+    if (!id) return;
+
+    handleGetMeetings(id)
+      .then(res => {
+        const list = res?.data || res;
+        setMeetings(Array.isArray(list) ? list : []);
+      })
+      .catch(err => console.error("Failed to fetch meetings:", err));
+  }, [id]);
+
 
   const handleBack = () => {
     navigate({
-      pathname: "/Dashboard", // Navigate back to the dashboard
-      search: createSearchParams({ id: id }).toString(),
+      pathname: "/Dashboard",
+      search: createSearchParams({ id }).toString(),
     });
   };
+
 
   const handleFriendClick = async (friend) => {
     setSelectedFriend(friend);
@@ -51,14 +71,10 @@ const Schedular = () => {
 
     try {
       const data = await handleGetTrueUserAvailability(friend.id);
-
-      console.log("Availability API response:", data); 
-
-      // Try multiple common shapes:
       const slots =
-        data?.availability ||  // { availability: [...] }
-        data?.slots ||         // { slots: [...] }
-        (Array.isArray(data) ? data : []); // data is just an array
+        data?.availability ||
+        data?.slots ||
+        (Array.isArray(data) ? data : []);
 
       setAvailableSlots(Array.isArray(slots) ? slots : []);
     } catch (err) {
@@ -67,170 +83,166 @@ const Schedular = () => {
     }
   };
 
-  const formatDateTime = (value) => {
-    if (!value) return "Unknown time";
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return String(value); // fallback to raw string
-    return d.toLocaleString();
-  };
 
   const handleSchedule = () => {
     if (!selectedFriend || !selectedSlot) return;
 
-    const slot = availableSlots.find(
-      s => String(s.id) === String(selectedSlot)
-    );
+    const slot = availableSlots.find(s => String(s.id) === String(selectedSlot));
     if (!slot) return;
 
-    console.log("Schedule meeting with:", selectedFriend, "at:", slot);
-
-    // Extract times using all possible field names
     const startRaw =
-      slot.start_time ||
-      slot.startTime ||
-      slot.start ||
-      slot.from;
+      slot.start_time || slot.startTime || slot.start || slot.from;
 
     const endRaw =
-      slot.end_time ||
-      slot.endTime ||
-      slot.end ||
-      slot.to;
+      slot.end_time || slot.endTime || slot.end || slot.to;
 
-    // Extract day of week (prefer backend value, fallback to computed)
     const dayOfWeek =
-      slot.day_of_week ||    // e.g., "Mon"
+      slot.day_of_week ||
       new Date(startRaw).toLocaleDateString(undefined, { weekday: "short" });
 
-    // Format display time
-    const timeLabel = `${dayOfWeek} ${formatDateTime(startRaw)}`;
-
-    // Call backend API
-    handleCreateMeeting(
-      id,                 // user1
-      selectedFriend.id,  // user2
-      dayOfWeek,          // NEW: day_of_week
-      startRaw,
-      endRaw
-    );
-
-    alert(
-      `Meeting requested with ${selectedFriend.firstName} ${selectedFriend.lastName} on ${dayOfWeek} at ${formatDateTime(startRaw)}`
-    );
+    handleCreateMeeting(id, selectedFriend.id, dayOfWeek, startRaw, endRaw)
+      .then(() => {
+        alert(`Meeting scheduled with ${selectedFriend.firstName}!`);
+        return handleGetMeetings(id);
+      })
+      .then((res) => {
+        const list = res?.data || res;
+        setMeetings(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => console.error("Meeting creation failed:", err));
   };
+
 
   return (
     <div className="screen-Background">
-      <div className="friends-list-container">
-        <h2>Your Friends List</h2>
-        <p className="instructions">Please Click on a User to Schedule a Meeting</p>
-        {friends.length === 0 ? (
-          <p className="no-friends-message">No friends added yet.</p>
-        ) : (
-          <div className="friends-list">
-            {friends.map(friend => (
-              <div
-                key={friend.id} // Ensure each item has a unique key
-                className="friend-chip"
-                onClick={() => {
-                  handleFriendClick(friend);
-                 // put the drop down thing here.
-                }}
-              >
-                {friend.firstName} {friend.lastName}
-              </div>
-            ))}
-          </div>
-        )}
 
-        {selectedFriend && (
-        <div className="scheduler-panel">
-          <h3>
-            Schedule with {selectedFriend.firstName} {selectedFriend.lastName}
-          </h3>
+      <div className="scheduler-wrapper">
 
-          {availableSlots.length === 0 ? (
-            <p className="no-slots-message">
-              This user has no available time slots.
-            </p>
+        
+        <div className="scheduled-meetings-box">
+          <h2>Your Scheduled Meetings</h2>
+
+          {meetings.length === 0 ? (
+            <p>No meetings scheduled.</p>
           ) : (
-            <>
-              <label className="dropdown-label">
-                Choose a time: 
-                <select
-                  className="time-dropdown"
-                  value={selectedSlot}
-                  onChange={(e) => setSelectedSlot(e.target.value)}
-                >
-                  <option value="">...</option>
-                  {availableSlots.map(slot => {
-                    const startRaw =
-                      slot.start_time ||
-                      slot.startTime ||
-                      slot.start ||
-                      slot.from;
+            <ul className="meeting-list">
+              {meetings.map((m) => {
+                const otherUser =
+                  m.user1_id === Number(id) ? m.user2_id : m.user1_id;
 
-                    const endRaw =
-                      slot.end_time ||
-                      slot.endTime ||
-                      slot.end ||
-                      slot.to;
-
-                    const startDate = new Date(startRaw);
-                    const endDate = new Date(endRaw);
-
-                    // If the date can't be parsed, fallback raw
-                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                      return (
-                        <option key={slot.id} value={slot.id}>
-                          {slot.day_of_week ?? "??"} — {String(startRaw)} – {String(endRaw)}
-                        </option>
-                      );
-                    }
-
-                      // WEEKDAY NAME (Convert date → "Mon", OR use slot.day_of_week directly)
-                      const weekdayAuto = startDate.toLocaleDateString(undefined, { weekday: "short" });
-                      const weekday = slot.day_of_week || weekdayAuto;  // prefer backend, fallback to computed
-
-                      const startTimeLabel = startDate.toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      });
-
-                      const endTimeLabel = endDate.toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      });
-
-                      return (
-                        <option key={slot.id} value={slot.id}>
-                          {weekday} — {startTimeLabel} to {endTimeLabel}
-                        </option>
-                      );
-                    })}
-                </select>
-              </label>
-
-              <button
-                className="btn-confirm"
-                disabled={!selectedSlot}
-                onClick={handleSchedule}
-              >
-                Confirm Meeting
-              </button>
-            </>
+                return (
+                  <li key={m.id} className="meeting-item">
+                    <strong>With:</strong> {getFriendName(otherUser)} <br />
+                    <strong>Day:</strong> {m.day_of_week} <br />
+                    <strong>Time:</strong> {m.start_time} – {m.end_time}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
-      )}
 
-        {/* Back Button */}
-        <div className="button-container">
-          <button className="btn-back-02" onClick={handleBack}>
-            Back
-          </button>
+        
+        <div className="friends-list-container">
+          <h2>Your Friends List</h2>
+          <p className="instructions">Please Click on a User to Schedule a Meeting</p>
+
+          {friends.length === 0 ? (
+            <p className="no-friends-message">No friends added yet.</p>
+          ) : (
+            <div className="friends-list">
+              {friends.map(friend => (
+                <div
+                  key={friend.id}
+                  className="friend-chip"
+                  onClick={() => handleFriendClick(friend)}
+                >
+                  {friend.firstName} {friend.lastName}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedFriend && (
+            <div className="scheduler-panel">
+              <h3>
+                Schedule with {selectedFriend.firstName} {selectedFriend.lastName}
+              </h3>
+
+              {availableSlots.length === 0 ? (
+                <p className="no-slots-message">This user has no available time slots.</p>
+              ) : (
+                <>
+                  <label className="dropdown-label">
+                    Choose a time:
+                    <select
+                      className="time-dropdown"
+                      value={selectedSlot}
+                      onChange={(e) => setSelectedSlot(e.target.value)}
+                    >
+                      <option value="">...</option>
+                      {availableSlots.map(slot => {
+                        const startRaw =
+                          slot.start_time || slot.startTime || slot.start || slot.from;
+
+                        const endRaw =
+                          slot.end_time || slot.endTime || slot.end || slot.to;
+
+                        const startDate = new Date(startRaw);
+                        const endDate = new Date(endRaw);
+
+                        if (isNaN(startDate.getTime())) {
+                          return (
+                            <option key={slot.id} value={slot.id}>
+                              {slot.day_of_week ?? "??"} — {String(startRaw)} – {String(endRaw)}
+                            </option>
+                          );
+                        }
+
+                        const weekday = slot.day_of_week ||
+                          startDate.toLocaleDateString(undefined, { weekday: "short" });
+
+                        const startLabel = startDate.toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        });
+
+                        const endLabel = endDate.toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        });
+
+                        return (
+                          <option key={slot.id} value={slot.id}>
+                            {weekday} — {startLabel} to {endLabel}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+
+                  <button
+                    className="btn-confirm"
+                    disabled={!selectedSlot}
+                    onClick={handleSchedule}
+                  >
+                    Confirm Meeting
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="button-container">
+            <button className="btn-back-02" onClick={handleBack}>
+              Back
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
 };
+
 export default Schedular;

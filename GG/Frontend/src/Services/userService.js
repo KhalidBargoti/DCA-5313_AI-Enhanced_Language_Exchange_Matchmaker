@@ -171,6 +171,9 @@ export const handleCreateMeeting = (user1_id, user2_id, day_of_week, start_time,
     end_time
   });
 
+export const handleGetMeetings = (userId) => {
+  return axios.get(`/api/v1/meetings/${userId}`);
+};
 
 export {
         handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleProfileUpdateAPI, handleChatApi, 
