@@ -175,6 +175,18 @@ export const handleGetMeetings = (userId) => {
   return axios.get(`/api/v1/meetings/${userId}`);
 };
 
+export const handleDeleteMeeting = (
+  user1_id,
+  user2_id,
+  day_of_week,
+  start_time,
+  end_time
+) => {
+  // axios delete with body: use `data` field
+  return axios.delete('/api/v1/deleteMeeting', {
+    data: { user1_id, user2_id, day_of_week, start_time, end_time },
+  });
+};
 export {
         handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleProfileUpdateAPI, handleChatApi, 
         handleGetUser, getMessages, addMessage, handleTranslator, handleMatch, handleGetProfile,

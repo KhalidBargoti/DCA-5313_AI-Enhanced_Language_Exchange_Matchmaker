@@ -6,7 +6,8 @@ import {
   handleGetTrueFriendsList, 
   handleCreateMeeting, 
   handleGetTrueUserAvailability,
-  handleGetMeetings
+  handleGetMeetings,
+  handleDeleteMeeting      
 } from '../Services/userService';
 
 const Schedular = () => {
@@ -112,6 +113,40 @@ const Schedular = () => {
       .catch((err) => console.error("Meeting creation failed:", err));
   };
 
+const handleCancelMeeting = async (meeting) => {
+  try {
+    const currentUserId = Number(id);
+    const otherUserId =
+      meeting.user1_id === currentUserId ? meeting.user2_id : meeting.user1_id;
+
+    // Optional confirm dialog
+    const ok = window.confirm(
+      `Cancel meeting with ${getFriendName(otherUserId)} on ${
+        meeting.day_of_week
+      } at ${meeting.start_time}?`
+    );
+    if (!ok) return;
+
+    const res = await handleDeleteMeeting(
+      meeting.user1_id,
+      meeting.user2_id,
+      meeting.day_of_week,
+      meeting.start_time,
+      meeting.end_time
+    );
+
+    console.log('Delete meeting response:', res.data);
+
+    // Remove it from local state so UI updates
+    setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+
+    alert(`Meeting cancelled with ${getFriendName(otherUserId)}!`);
+  } catch (err) {
+    console.error('Failed to delete meeting:', err.response?.data || err.message);
+    alert('Failed to delete meeting. Check console for details.');
+  }
+};
+
 
   return (
     <div className="screen-Background">
@@ -121,7 +156,7 @@ const Schedular = () => {
         
         <div className="scheduled-meetings-box">
           <h2>Your Scheduled Meetings</h2>
-
+          <p className="scheduler-subtext">Click on a meeting to delete it</p>
           {meetings.length === 0 ? (
             <p>No meetings scheduled.</p>
           ) : (
@@ -131,7 +166,11 @@ const Schedular = () => {
                   m.user1_id === Number(id) ? m.user2_id : m.user1_id;
 
                 return (
-                  <li key={m.id} className="meeting-item">
+                  <li  
+                    key={m.id} 
+                    className="meeting-item"
+                    onClick={() => handleCancelMeeting(m)}
+                  >
                     <strong>With:</strong> {getFriendName(otherUser)} <br />
                     <strong>Day:</strong> {m.day_of_week} <br />
                     <strong>Time:</strong> {m.start_time} – {m.end_time}
@@ -168,6 +207,7 @@ const Schedular = () => {
               <h3>
                 Schedule with {selectedFriend.firstName} {selectedFriend.lastName}
               </h3>
+              
 
               {availableSlots.length === 0 ? (
                 <p className="no-slots-message">This user has no available time slots.</p>

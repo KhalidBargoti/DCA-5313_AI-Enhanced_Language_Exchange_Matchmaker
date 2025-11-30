@@ -475,7 +475,46 @@ let createMeeting = async (req, res) => {
   }
 };
 
+let deleteMeeting = async (req, res) => {
+  try {
+    const { user1_id, user2_id, day_of_week, start_time } = req.body;
+
+    if (!user1_id || !user2_id || !day_of_week || !start_time) {
+      return res.status(400).json({
+        message: "Missing required fields (user1_id, user2_id, day_of_week, start_time)",
+      });
+    }
+
+    const [results] = await db.sequelize.query(
+      `
+      DELETE FROM meetingmodel
+      WHERE user1_id = ?
+        AND user2_id = ?
+        AND day_of_week = ?
+        AND start_time = ?
+      `,
+      {
+        replacements: [user1_id, user2_id, day_of_week, start_time],
+      }
+    );
+
+    return res.status(200).json({
+      message: "Meeting removed successfully",
+      affectedRows: results.affectedRows || 0,
+    });
+
+  } catch (error) {
+    console.error("Error deleting meeting:", error);
+    return res.status(500).json({
+      message: "Failed to delete meeting",
+      error: error.message,
+    });
+  }
+};
+
 const APIController = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList, getUserAvailability, createMeeting // added getUserNames as an export
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, 
+    updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, 
+    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting
 };
 export default APIController;

@@ -69,6 +69,7 @@ const initAPIRoute = (app) => {
     router.get("/api/availability/:userId", APIController.getUserAvailability);
 
     router.post('/createMeeting', APIController.createMeeting);
+    router.delete('/deleteMeeting', APIController.deleteMeeting);
 
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);
