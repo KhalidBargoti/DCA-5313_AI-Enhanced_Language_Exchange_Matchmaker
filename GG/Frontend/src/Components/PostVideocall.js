@@ -20,6 +20,8 @@ function PostVideocall() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const id = search.get("id"); // current userId (string)
+  const selfId = search.get("selfId");     // same thing as id, but explicit
+  const partnerId = search.get("partnerId");
 
   const [users, setUsers] = useState([]);
   const [chatPartnerId, setPartner] = useState(null);
@@ -41,11 +43,6 @@ function PostVideocall() {
   useEffect(() => {
     const participants = JSON.parse(localStorage.getItem('participantData')) || {};
     console.log("Participants in the call:", participants);
-
-    const currentRoom = participants[id];
-    const partnerId = Object.keys(participants).find(
-      (key) => participants[key] === currentRoom && key !== id
-    );
 
     setPartner(partnerId || null);
     console.log("Chat Partner ID:", partnerId);
@@ -108,16 +105,16 @@ function PostVideocall() {
 
     console.log('handleAddFriend clicked');   // <--- add this
     console.log('current user id:', id);
-    console.log('chatPartnerId:', chatPartnerId);
+    console.log('partnerId:', partnerId);
 
-    if (!chatPartnerId) {
+    if (!partnerId) {
       console.error("No chat partner ID.");
       return;
     }
 
-    const friend = users.find(user => String(user.id) === String(chatPartnerId));
+    const friend = users.find(user => String(user.id) === String(partnerId));
     if (!friend) {
-      console.error("No user found with chatPartnerId:", chatPartnerId);
+      console.error("No user found with partnerId:", partnerId);
       return;
     }
 
@@ -173,18 +170,23 @@ function PostVideocall() {
       console.log(
         "Submitting rating:", rating,
         "proficiency:", targetLanguageProficiency,
-        "and comment:", comment,
-        "for user ID:", chatPartnerId
+        //"and comment:", comment,
+        "for user ID:", partnerId
       );
 
-      await handleUpdateRating(chatPartnerId, rating);
+      await handleUpdateRating(partnerId, rating);
       //await handleUpdateProficiency(chatPartnerId, targetLanguageProficiency);
-      await handleAddComment(chatPartnerId, comment);
+
+      // if (comment != null){
+      //   await handleAddComment(partnerId, comment);
+      // }
+
 
       setSuccessMessage('Thanks for submitting a User Review!');
       setTimeout(() => setSuccessMessage(''), 3000);
+      handleBack()
     } catch (error) {
-      console.error("Failed to update rating, proficiency, or add comment:", error);
+      console.error("Failed to update rating or add comment:", error);
     }
   };
 
