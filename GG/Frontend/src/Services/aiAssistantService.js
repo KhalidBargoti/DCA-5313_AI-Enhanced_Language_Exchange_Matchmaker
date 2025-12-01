@@ -44,9 +44,19 @@ const handleGetConversation = (userId) => {
     return axios.get(`/api/v1/ai-assistant/conversation/${userId}`);
 };
 
+/**
+ * Get the current conversation from memory
+ * @param {number} userId
+ * @returns {Promise} Response with the conversation array
+ */
+const handleGetAllAIChats = (userId) => {
+    return axios.get(`/api/v1/ai-assistant/history/${userId}`);
+};
+
 export {
     handleChatWithAssistant,
     handleSaveConversation,
     handleClearConversation,
-    handleGetConversation
+    handleGetConversation,
+    handleGetAllAIChats
 };

@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, createSearchParams } from 'react-router-dom';
 import './AvailabilityPicker.css';
+import axios from 'axios';
+
+
 
 const AvailabilityPicker = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const navigate = useNavigate();
+  const returnTo = search.get('returnTo') || 'FriendSearch';
   
   const [selectedSlots, setSelectedSlots] = useState(new Set());
   
@@ -30,10 +34,13 @@ const AvailabilityPicker = () => {
     
     setSelectedSlots(newSelectedSlots);
   };
-
+  
   // Handle confirm button 
-  const handleConfirm = () => {
-    // Convert selected slots to a format that can be passed back
+  const handleConfirm = async () => {
+    if (!id) {
+      alert("User ID is missing. Cannot save availability.");
+      return;
+    }
     const availabilityData = Array.from(selectedSlots).map(slot => {
       const [dayIndex, timeIndex] = slot.split('-').map(Number);
       return {
@@ -43,21 +50,41 @@ const AvailabilityPicker = () => {
         timeIndex
       };
     });
-
-    // Navigate back to FriendSearch with selected availability
-    navigate({
-      pathname: '/FriendSearch',
-      search: createSearchParams({
-        id: id,
-        availability: JSON.stringify(availabilityData)
-      }).toString(),
+    const convertTo24Hour = (timeStr) => {
+      const [hour, modifier] = timeStr.split(' ');
+      let h = parseInt(hour);
+      if (modifier === 'pm' && h !== 12) h += 12;
+      if (modifier === 'am' && h === 12) h = 0;
+      return h.toString().padStart(2,'0') + ':00';
+    };
+    const backendPayload = availabilityData.map(slot => {
+      const time24 = convertTo24Hour(slot.time); // helper to convert '8 am' → '08:00'
+      return {
+        day_of_week: slot.day,
+        start_time: time24,
+        end_time: time24
+      };
     });
+    console.log("Submitting availability for userId:", id, availabilityData);
+    await axios.post(`http://localhost:8080/api/v1/users/${id}/availability`, {'slots': backendPayload});
+    // Navigate back to FriendSearch with selected availability
+    //In the event that the user selects a meeting time in the AI chat, they return to the chat not Friend Search
+    const returnTo = search.get("returnTo");
+    if (returnTo === "Assistant") {
+      const slotDescriptions = availabilityData.map(slot => `${slot.day} ${slot.time}`).join(", ");
+      navigate(`/Assistant?id=${id}&slotsAdded=${encodeURIComponent(slotDescriptions)}`);
+    } else {
+      navigate({
+        pathname: '/FriendSearch',
+        search: `id=${id}&availability=${encodeURIComponent(JSON.stringify(availabilityData))}`
+      });
+    }
   };
 
   // Handle back button
   const handleBack = () => {
     navigate({
-      pathname: '/FriendSearch',
+      pathname: `/${returnTo}`,
       search: createSearchParams({
         id: id,
       }).toString(),
