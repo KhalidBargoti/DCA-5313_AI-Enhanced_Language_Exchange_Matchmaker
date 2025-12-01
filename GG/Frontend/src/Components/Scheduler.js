@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './Schedular.css';
+import './Scheduler.css';
 import { useNavigate, createSearchParams, useSearchParams } from "react-router-dom";
 
 import { 
@@ -10,7 +10,7 @@ import {
   handleDeleteMeeting      
 } from '../Services/userService';
 
-const Schedular = () => {
+const Scheduler = () => {
   const [friends, setFriends] = useState([]);
   const [meetings, setMeetings] = useState([]);
 
@@ -156,7 +156,9 @@ const handleCancelMeeting = async (meeting) => {
         
         <div className="scheduled-meetings-box">
           <h2>Your Scheduled Meetings</h2>
-          <p className="scheduler-subtext">Click on a meeting to delete it</p>
+          {meetings.length > 0 && (
+            <p className="scheduler-subtext">Click on a meeting to delete it</p>
+          )}
           {meetings.length === 0 ? (
             <p>No meetings scheduled.</p>
           ) : (
@@ -285,4 +287,4 @@ const handleCancelMeeting = async (meeting) => {
   );
 };
 
-export default Schedular;
+export default Scheduler;
