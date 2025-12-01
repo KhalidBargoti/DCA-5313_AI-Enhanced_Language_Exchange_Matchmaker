@@ -1,7 +1,8 @@
 .dashboard-container {
   display: flex;
   height: 100vh;
-  background-color: white;
+  /*background-color: white; new background color*/
+  background-color: #f0f1f7;
 }
 
 .dashboard-left {
@@ -13,6 +14,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+
 }
 
 .dashboard-left-buttons {
@@ -32,6 +34,11 @@
   justify-items: center; /* Center grid items */
   align-items: center;
   animation: fadeIn 0.5s ease-in;
+  /*soft panel container*/
+  padding: 40px;
+  background: #f7f7fb;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
 .user-info {
@@ -45,12 +52,15 @@
   margin: 8px;;
   font-weight: bold;
   color: white;
-  border: none;
+  /*border: none;*/
   border-radius: 8px;
-  background-color: #6344A6;
+  /*background-color: #6344A6;*/
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.3s ease;
+
+  border: 3px solid #8a6bcf;
+  background: linear-gradient(135deg, #5a2ea6, #8a6bcf); /* Gradient background */
       
   &:focus {
     outline: none;
@@ -66,18 +76,24 @@
 
 .btn-questions:hover,
 .btn-logout:hover {
-  background-color: #7a56c8;
+  /*background-color: #7a56c8;
   transform: scale(1.05);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);*/
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+  /*highlight when hovered over*/
+  background: linear-gradient(135deg, #6642bb 0%, #9b7ed6 100%);
 }
 
 .btn-action {
   width: 350px; /* Square button dimensions */
   height: 350px;
   border-radius: 15px; /* Slightly rounded corners */
-  border: none;
+  /*border: none;*/
+  border: 4px solid #8a6bcf;
   color: white;
-  background-color: #6344A6; /* Solid purple */
+  /*background-color: #6344A6; /* Solid purple. not solid */
+  background: linear-gradient(135deg, #5a2ea6, #8a6bcf); /* Gradient background */
   font-size: 40px; /* Adjust text size */
   text-align: center;
   cursor: pointer;
@@ -85,10 +101,16 @@
   align-items: center; /* Vertical alignment */
   justify-content: center; /* Horizontal alignment */
 
+  /*button hover slightly more dramatic*/
+  transition: transform .25s ease, box-shadow .25s ease;
   &:hover {
-    background-color: darken(#6344A6, 10%);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    /*background-color: darken(#6344A6, 10%);
+    /*box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);*/
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+    /*highlight when hovered over*/
+    background: linear-gradient(135deg, #6642bb 0%, #9b7ed6 100%);
   }
 
   &:focus {
@@ -142,3 +164,14 @@
 
 
 }
+/*circular profile icon*/
+.dashboard-left img.center {
+  width: 330px;
+  height: 330px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 4px solid rgba(255,255,255,0.2);
+}
+
+
