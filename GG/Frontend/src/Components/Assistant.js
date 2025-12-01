@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import "./Assistant.css";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import {handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation, handleGetAllAIChats} from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
@@ -11,6 +11,8 @@ export default function Assistant() {
   const [search] = useSearchParams();
   const idFromUrl = search.get("id");
   const navigate = useNavigate();
+  const location = useLocation();
+  const [processedAlerts] = useState(new Set());
 
   const [userId, setUserId] = useState(null);
   const [history, setHistory] = useState([]);
@@ -133,6 +135,25 @@ export default function Assistant() {
       behavior: "smooth"
     });
   }, [messages]);
+
+    useEffect(() => {
+      const slotsAdded = search.get("slotsAdded");
+      if (!slotsAdded) return;
+
+      const alertSignature = `slots:${slotsAdded}`;
+      if (processedAlerts.has(alertSignature)) {
+        console.log("Skipping duplicate alert:", alertSignature);
+        return;
+      }
+      window.alert(`You added ${slotsAdded} to your availability.`);
+      processedAlerts.add(alertSignature);
+      //prevent retriggering
+      const params = new URLSearchParams(location.search);
+      params.delete("slotsAdded");
+      const newSearch = params.toString();
+      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ""}`;
+      window.history.replaceState({}, "", newUrl);
+    }, [search, location.pathname, processedAlerts]);
 
   const loadConversationFromHistory = chat => {
     if (!chat?.messages) return;
@@ -297,9 +318,19 @@ export default function Assistant() {
           </form>
 
           <div className="assistant-footer">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+            <Button variant="secondary" onClick={() => navigate("/Dashboard")}>
               Back
             </Button>
+            <Button
+                variant="primary"
+                style={{ marginLeft: "10px" }}
+                onClick={() => {
+                  console.log("Navigating to AvailabilityPicker for userId:", userId);
+                  navigate(`/AvailabilityPicker?id=${userId}&returnTo=Assistant`);
+                }}
+              >
+                Select Availability
+              </Button>
 
             <Button variant="success" onClick={handleSave} style={{ marginLeft: "10px" }}>
               Save to History
