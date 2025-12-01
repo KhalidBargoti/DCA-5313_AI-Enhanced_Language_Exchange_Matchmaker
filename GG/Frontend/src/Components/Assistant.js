@@ -22,7 +22,15 @@ export default function Assistant() {
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
 
+  // --- Voice Input States & Refs (MediaRecorder) ---
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  // --------------------------------------------------
+
   useEffect(() => {
+    // ... (Existing useEffect for fetchUserId remains the same)
     const fetchUserId = async () => {
       try {
         if (idFromUrl) {
@@ -57,6 +65,7 @@ export default function Assistant() {
 
   // Load all conversation history for sidebar
   useEffect(() => {
+    // ... (Existing useEffect for fetchHistory remains the same)
     if (!userId) return;
 
     const fetchHistory = async () => {
@@ -104,6 +113,7 @@ export default function Assistant() {
   }, [userId]);
 
   const loadConversation = useCallback(async () => {
+    // ... (Existing loadConversation remains the same)
     if (!userId) return;
 
     try {
@@ -139,31 +149,123 @@ export default function Assistant() {
     setMessages(chat.messages);
   };
 
+  /**
+   * Main function to send either text input or a recorded audio blob.
+   * @param {Event} e The form submit event.
+   */
   const sendMessage = async (e) => {
     e.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed) return;
+    const trimmedInput = input.trim();
+
+    // Determine what to send: Audio or Text
+    const isAudioSubmission = !!audioBlob;
+
+    if (!isAudioSubmission && !trimmedInput) return;
+    
+    // If sending audio, clear text input state
+    if (isAudioSubmission) setInput("");
 
     setError(null);
     setIsLoading(true);
 
-    setMessages(m => [...m, { role: "user", text: trimmed }]);
-    setInput("");
+    // Add a placeholder message for the user's action
+    const userMessage = isAudioSubmission 
+        ? { role: "user", text: "[Sent Audio Message]" } 
+        : { role: "user", text: trimmedInput };
+        
+    setMessages(m => [...m, userMessage]);
+    
+    // Clear audio blob after queuing the message
+    setAudioBlob(null);
 
     try {
-      const response = await handleChatWithAssistant(trimmed, userId);
-      const reply = response.reply || "I'm sorry, I couldn't process that.";
+        let response;
+        if (isAudioSubmission) {
+            // --- ⚠️ This requires your backend service (`handleChatWithAssistant`)
+            //     to be able to handle a multipart form submission that contains
+            //     the audio blob and the user ID. ⚠️
+            response = await handleChatWithAssistant(null, userId, audioBlob);
+        } else {
+            response = await handleChatWithAssistant(trimmedInput, userId);
+        }
+        
+        const reply = response.reply || "I'm sorry, I couldn't process that.";
 
-      setMessages(m => [...m, { role: "assistant", text: reply }]);
+        setMessages(m => [...m, { role: "assistant", text: reply }]);
     } catch (err) {
-      const msg = err.response?.data?.error || "Failed to send message.";
+      const msg = err.response?.data?.error || (isAudioSubmission ? "Failed to send audio." : "Failed to send message.");
       setMessages(m => [...m, { role: "assistant", text: `Error: ${msg}` }]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 🗣️ MEDIA RECORDER LOGIC 🗣️
+  const startRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        setAudioBlob(null); // Clear previous audio
+        setInput(""); // Clear text input while recording
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            setAudioBlob(audioBlob);
+            setIsRecording(false);
+            
+            // Cleanup stream tracks
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Now that we have the blob, automatically submit the message
+            // Create a mock event for sendMessage
+            const autoSendEvent = { preventDefault: () => {} };
+            sendMessage(autoSendEvent);
+        };
+
+        mediaRecorder.onerror = (event) => {
+            console.error('Recording error:', event.error);
+            setIsRecording(false);
+            setError(`Recording error: ${event.error.name}`);
+            stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        setError(null);
+
+    } catch (err) {
+        console.error("Error accessing microphone:", err);
+        setError("Please allow microphone access to record audio.");
+        setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+  // 🗣️ END MEDIA RECORDER LOGIC 🗣️
+
+
   const handleSave = async () => {
+    // ... (handleSave remains the same)
     if (!userId) return;
 
     try {
@@ -208,6 +310,7 @@ export default function Assistant() {
   };
 
   const handleClear = async () => {
+    // ... (handleClear remains the same)
     if (!userId) return;
 
     if (!window.confirm("Clear conversation?")) return;
@@ -229,6 +332,7 @@ export default function Assistant() {
 
         {/* LEFT SIDEBAR */}
         <div className="assistant-sidebar">
+            {/* ... (Sidebar remains the same) */}
           <div className="sidebar-header">
             <h3>Conversations</h3>
           </div>
@@ -266,6 +370,14 @@ export default function Assistant() {
           {error && (
             <div className="alert alert-warning">{error}</div>
           )}
+          
+          {isRecording && (
+            <div className="alert alert-danger blink-text">🔴 Recording... Click the button again to stop.</div>
+          )}
+          {audioBlob && !isRecording && (
+              <div className="alert alert-success">✅ Audio recorded! Sending...</div>
+          )}
+
 
           <div className="assistant-body" ref={scrollRef}>
             {messages.map((m, i) => (
@@ -284,15 +396,36 @@ export default function Assistant() {
           </div>
 
           <form className="assistant-inputbar" onSubmit={sendMessage}>
+            
+            {/* 🎙️ Microphone Button (for recording audio) 🎙️ */}
+            <Button 
+                variant={isRecording ? "danger" : "primary"}
+                onClick={toggleRecording}
+                className="assistant-mic"
+                disabled={isLoading}
+                style={{ marginRight: "10px" }}
+                title={isRecording ? "Stop Recording" : "Start Audio Recording"}
+            >
+                {isRecording ? "◼️ Stop" : "🎤 Record"}
+            </Button>
+            {/* -------------------------------------- */}
+
             <input
               className="assistant-input"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setAudioBlob(null); // Clear audio blob if user starts typing
+              }}
               placeholder="Message Chat Assistant…"
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
             />
-            <Button type="submit" className="assistant-send">
-              {isLoading ? "Sending…" : "Send"}
+            <Button 
+                type="submit" 
+                className="assistant-send" 
+                disabled={isLoading || (!input.trim() && !audioBlob)}
+            >
+              {isLoading ? "Sending…" : (audioBlob ? "Send Audio" : "Send")}
             </Button>
           </form>
 
