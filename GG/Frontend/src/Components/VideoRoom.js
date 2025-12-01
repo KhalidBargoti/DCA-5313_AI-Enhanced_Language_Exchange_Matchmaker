@@ -37,7 +37,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   const cleanupCall = async (removeListeners = true) => {
     try {
       if (localTracks.length) await client.unpublish(localTracks);
-    } catch (e) { console.warn('⚠️ Unpublish error:', e); }
+    } catch (e) { console.warn('Unpublish error:', e); }
 
     for (const t of localTracks) {
       try { t.stop(); t.close(); } catch {}
@@ -140,7 +140,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
 
       } catch (err) {
         if (!cancelled) { // Only log real errors, not intentional cancels
-          console.error('❌ Agora init error:', err);
+          console.error('Agora init error:', err);
         }
       }
     };
@@ -190,7 +190,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
             ...prev,
             partner: user.uid,
           }));
-          console.log('👥 Remote user joined, partner uid =', user.uid);
+          console.log('Remote user joined, partner uid =', user.uid);
         }
       });
 
@@ -224,7 +224,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
       joinedRef.current = true;
     } catch (err) {
       if (!cancelled) {
-        console.error('❌ Agora init error:', err);
+        console.error('Agora init error:', err);
       }
     }
   };
