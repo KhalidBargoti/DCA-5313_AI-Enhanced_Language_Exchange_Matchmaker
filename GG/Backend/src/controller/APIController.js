@@ -546,7 +546,7 @@ let deleteMeeting = async (req, res) => {
 
 const APIController = { 
     addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, 
-    updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, 
+    addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, 
     getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting
 };
 export default APIController;
