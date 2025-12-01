@@ -232,6 +232,17 @@ function Dashboard()  {
           >
             Chat Assistant
           </button>
+          <button
+            className="btn-action"
+            onClick={() =>
+              navigate({
+                pathname: "/TranscriptView",
+                search: createSearchParams({ id }).toString()
+              })
+            }
+          >
+              Transcripts
+          </button>
 
       </div>
 
