@@ -23,7 +23,7 @@ import FriendsList from '../Components/FriendsList';
 import UserReport from '../Components/UserReport';
 import AvailabilityPicker from '../Components/AvailabilityPicker';
 import Assistant from "../Components/Assistant";
-import Schedular from "../Components/Schedular";
+import Scheduler from "../Components/Scheduler";
 
 const App = () => {
 
@@ -50,7 +50,7 @@ const App = () => {
           <Route path="/FriendsList" element={<FriendsList/>}/>
           <Route path="/AvailabilityPicker" element={<AvailabilityPicker/>}/>
           <Route path="/Assistant" element={<Assistant />} />
-          <Route path="/Schedular" element={<Schedular />} />
+          <Route path="/Scheduler" element={<Scheduler />} />
        </Routes>
       </Router>
 
