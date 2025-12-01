@@ -312,109 +312,110 @@ const [search] = useSearchParams();
       }).toString()
     });
   };
- 
+  
   return (
-    <div className="screen-Background">
-      <div className="screen-Container" style={{ justifyContent: 'center' }}>
-      <div className="screen-Content">
-        <div>
-        <h1>Set Profile</h1>
-        <h6>(* indicates required fields)</h6>
-        </div>
-      {/* Calling to the methods */}
+  <div className="set-profile-wrapper">
+    <div className="set-profile-card">
+
+      <h1>Set Profile</h1>
+      <h6>(* indicates required fields)</h6>
+
       <div className="messages">
         {errorMessage()}
         {successMessage()}
       </div>
- 
-      <form>
-        <div className="profile-container">
-        {/* Labels and inputs for form data */}
+
+      <form className="set-profile-form">
 
         <div className='form-group'>
-        <label className="label">Native Language*</label>
-        <Select options={NativeLanguage} onChange={handleNativeLanguage}/>
+          <label className="label">Native Language*</label>
+          <Select options={NativeLanguage} onChange={handleNativeLanguage}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Target Language*</label>
-        <Select options={TargetLanguage} onChange={handleTargetLanguage}/>
+          <label className="label">Target Language*</label>
+          <Select options={TargetLanguage} onChange={handleTargetLanguage}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Level of Target Language*</label>
-        <Select options={TargetLanguageProficiency} onChange={handleTargetLanguageProficiency}/>
+          <label className="label">Level of Target Language*</label>
+          <Select options={TargetLanguageProficiency} onChange={handleTargetLanguageProficiency}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Age*</label>
-        <input 
-        placeholder ="Enter Age"
-        onChange={handleAge} className="input"
-        type="text" />
-        </div>
-      
-
-        <div className='form-group'>
-        <label className="label">Gender</label>
-        <Select options={Gender} onChange={handleGender}/>
+          <label className="label">Age*</label>
+          <input
+            placeholder="Enter Age"
+            onChange={handleAge}
+            className="input"
+            type="text"
+          />
         </div>
 
         <div className='form-group'>
-        <label className="label">Profession*</label>
-        <Select options={Profession} onChange={handleProfession}/>
-        </div>
-
-
-        <div className='form-group'>
-        <label className="label">Personality Type</label>
-        <Select options={MBTI} onChange={handleMBTI}/>
+          <label className="label">Gender</label>
+          <Select options={Gender} onChange={handleGender}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Zodiac</label>
-        <Select options={Zodiac} onChange={handleZodiac}/>
+          <label className="label">Profession*</label>
+          <Select options={Profession} onChange={handleProfession}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Interests</label>
-        <Select isMulti
-          options={allInterests}
-          onChange={handleInterestsChange}
-          value={selectedInterests}/>
+          <label className="label">Personality Type</label>
+          <Select options={MBTI} onChange={handleMBTI}/>
         </div>
 
         <div className='form-group'>
-        <label className="label">Default Time Zone</label>
-        <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
+          <label className="label">Zodiac</label>
+          <Select options={Zodiac} onChange={handleZodiac}/>
+        </div>
+
+        <div className='form-group'>
+          <label className="label">Interests</label>
+          <Select
+            isMulti
+            options={allInterests}
+            onChange={handleInterestsChange}
+            value={selectedInterests}
+          />
+        </div>
+
+        <div className='form-group'>
+          <label className="label">Default Time Zone</label>
+          <Select options={TimeZones} onChange={handleDefaultTimeZone}/>
         </div>
 
         <div className='form-group'>
           <label className="label">Availability</label>
-          <Select isMulti
+          <Select
+            isMulti
             options={availabilityOptions}
             value={availability}
-            onChange={handleAvailability}/>
+            onChange={handleAvailability}
+          />
         </div>
 
         <div className='form-group'>
           <label className="label">Visibility</label>
-          <Select options={VisibilityOptions} onChange={handleVisibility} />
+          <Select options={VisibilityOptions} onChange={handleVisibility}/>
         </div>
-        
 
+        <div className="profile-buttons">
+          <button className="btn-back-02" onClick={handleSubmit}>
+            Update Profile
+          </button>
+          <button className="btn-back-02" onClick={handleBack}>
+            Back
+          </button>
         </div>
-        <button className="btn-back-02"  onClick={handleSubmit}>
-          Update Profile
-        </button>
+
       </form>
-      </div>
-      <div>
-        <button className="btn-back-02" onClick={handleBack}>Back</button>
-      </div>
-      </div>
+
     </div>
-  );
+  </div>
+);
     
 }
 export default UpdateProfile;
