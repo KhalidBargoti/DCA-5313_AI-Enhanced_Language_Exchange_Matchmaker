@@ -184,9 +184,9 @@ export default function Assistant() {
             // --- ⚠️ This requires your backend service (`handleChatWithAssistant`)
             //     to be able to handle a multipart form submission that contains
             //     the audio blob and the user ID. ⚠️
-            response = await handleChatWithAssistant(null, userId, audioBlob);
+            response = await handleChatWithAssistant(null, audioBlob, userId);
         } else {
-            response = await handleChatWithAssistant(trimmedInput, userId);
+            response = await handleChatWithAssistant(trimmedInput, null, userId);
         }
         
         const reply = response.reply || "I'm sorry, I couldn't process that.";
@@ -255,6 +255,7 @@ export default function Assistant() {
   };
 
   const toggleRecording = () => {
+    console.log(isRecording);
     if (isRecording) {
       stopRecording();
     } else {
@@ -320,6 +321,7 @@ export default function Assistant() {
       setMessages([
         { role: "assistant", text: "Hi! I'm your Chat Assistant. How can I help?" }
       ]);
+      setAudioBlob(null);
       alert("Conversation cleared.");
     } catch (err) {
       alert("Failed to clear conversation.");
@@ -375,7 +377,7 @@ export default function Assistant() {
             <div className="alert alert-danger blink-text">🔴 Recording... Click the button again to stop.</div>
           )}
           {audioBlob && !isRecording && (
-              <div className="alert alert-success">✅ Audio recorded! Sending...</div>
+              <div className="alert alert-success">✅ Audio recorded! Hit the send button to send it.</div>
           )}
 
 

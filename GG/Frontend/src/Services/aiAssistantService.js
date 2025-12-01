@@ -3,14 +3,27 @@ import axios from '../Utils/axios';
 /**
  * Query the AI assistant
  * @param {string} message
+ * @param {audioBlob} audioBlob
  * @param {number} userId
  * @returns {Promise} AI response
  */
-const handleChatWithAssistant = (message, userId) => {
-    return axios.post('/api/v1/ai-assistant/chat', {
-        message: message,
-        userId: userId
-    });
+const handleChatWithAssistant = (message, audioBlob, userId) => {
+    if (message == null && audioBlob == null) {
+        return { 
+          "response" : { 
+              "data" : {
+                  "error" : "No audio or message"
+              }
+          }
+        };
+    } else if (message == null) {
+        console.log("bruh");
+    } else {
+        return axios.post('/api/v1/ai-assistant/chat', {
+            message: message,
+            userId: userId
+        });
+    }
 };
 
 /**
