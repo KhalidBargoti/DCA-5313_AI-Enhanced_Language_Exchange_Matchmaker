@@ -1,6 +1,6 @@
 import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
-
+import db from '../models/index.js';
 //TOWNSHEND: getAllUsers may be the best way to sort users on a page since all data on a UserAccount is attached to the user
 // I can explore this more
 let getAllUsers = async (req, res) => {
@@ -445,7 +445,108 @@ let getTrueFriendsList = async (req, res) => {
   }
 };
 
+let getUserAvailability = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing userId parameter" });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      "SELECT id, day_of_week, start_time, end_time FROM UserAvailability WHERE user_id = ? ORDER BY start_time ASC",
+      [userId]
+    );
+
+    return res.status(200).json({
+      message: "Availability fetched successfully",
+      availability: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching availability:", error);
+    return res.status(500).json({
+      message: "Failed to fetch availability",
+      error,
+    });
+  }
+};
+
+let createMeeting = async (req, res) => {
+  try {
+    const { user1_id, user2_id, day_of_week, start_time, end_time } = req.body;
+
+    // Basic validation
+    if (!user1_id || !user2_id || !day_of_week || !start_time || !end_time) {
+      return res.status(400).json({
+        message: "Missing required fields (user1_id, user2_id, start_time, end_time)"
+      });
+    }
+
+    // Create meeting
+    const [results] = await db.sequelize.query(
+      `
+      INSERT INTO meetingmodel (user1_id, user2_id, day_of_week, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      {
+        replacements: [user1_id, user2_id, day_of_week, start_time, end_time]
+      }
+    );
+
+    return res.status(201).json({
+      message: "Meeting created successfully",
+      insertedId: results,  // MySQL returns the insertId here
+    });
+
+  } catch (error) {
+    console.error("Error creating meeting:", error);
+    return res.status(500).json({
+      message: "Failed to create meeting",
+      error: error.message,
+    });
+  }
+};
+
+let deleteMeeting = async (req, res) => {
+  try {
+    const { user1_id, user2_id, day_of_week, start_time } = req.body;
+
+    if (!user1_id || !user2_id || !day_of_week || !start_time) {
+      return res.status(400).json({
+        message: "Missing required fields (user1_id, user2_id, day_of_week, start_time)",
+      });
+    }
+
+    const [results] = await db.sequelize.query(
+      `
+      DELETE FROM meetingmodel
+      WHERE user1_id = ?
+        AND user2_id = ?
+        AND day_of_week = ?
+        AND start_time = ?
+      `,
+      {
+        replacements: [user1_id, user2_id, day_of_week, start_time],
+      }
+    );
+
+    return res.status(200).json({
+      message: "Meeting removed successfully",
+      affectedRows: results.affectedRows || 0,
+    });
+
+  } catch (error) {
+    console.error("Error deleting meeting:", error);
+    return res.status(500).json({
+      message: "Failed to delete meeting",
+      error: error.message,
+    });
+  }
+};
+
 const APIController = { 
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, getTrueFriendsList // added getUserNames as an export
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating, 
+    updateProficiency, addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList,  removeFriend, addTrueFriend, removeTrueFriend, 
+    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting
 };
 export default APIController;

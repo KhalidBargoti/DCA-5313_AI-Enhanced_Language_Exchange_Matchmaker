@@ -215,6 +215,12 @@ function Dashboard()  {
           <button className="btn-action" onClick={call}>Call</button>
           <button className="btn-action" onClick={Translator}>Translator</button>
           <button className="btn-action" onClick={goToUserReport}>User Report</button>
+          <button className="btn-action" onClick={() => navigate({
+                pathname: "/Schedular",
+                search: createSearchParams({ id: id }).toString()
+              })}>
+              Schedular
+          </button>
           <button
             className="btn-action"
             onClick={() =>

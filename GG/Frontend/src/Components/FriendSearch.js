@@ -15,7 +15,8 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { getUserData } from '../Utils/userData'; // Import to retrieve stored current user data
-import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability, handleAddTrueFriend } from '../Services/userService';
+// import { handleAddToFriendsList, handleGetFriendsList, handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability, handleAddTrueFriend } from '../Services/userService';
+import {handleGetAllInterests, handleGetUserInterests, handleGetUserAvailability, handleAddTrueFriend} from '../Services/userService';
 
 const FriendSearch = () => {
   const [filterInput, setFilterInput] = useState('');
@@ -214,34 +215,32 @@ const FriendSearch = () => {
 
   const handleQuickAddFriend = async (user) => {
     try {
-    const currentUserId = Number(id);
-    const targetUserId  = Number(user.id);
-    const fullName      = `${user.firstName} ${user.lastName}`;
+      const currentUserId = Number(id);
+      const targetUserId  = Number(user.id);
+      const fullName      = `${user.firstName} ${user.lastName}`;
 
-    // 1) Create the friend pair in the Friends table (IDs)
-    await handleAddTrueFriend(currentUserId, targetUserId);
+      // 1) Create the friend pair in the Friends join table (authoritative source)
+      await handleAddTrueFriend(currentUserId, targetUserId);
 
-    // 2) (Optional legacy) keep your "friendsList" name array in DB
-    const { data } = await handleGetFriendsList(currentUserId);
-    const current = Array.isArray(data?.friendsList) ? data.friendsList : [];
-    const updated = current.includes(fullName) ? current : [...current, fullName];
-    if (updated !== current) {
-      await handleAddToFriendsList(currentUserId, updated);
-      localStorage.setItem('friendsList', JSON.stringify(updated));
+      // 2) Optional: keep a simple local list of names in localStorage
+      const stored = JSON.parse(localStorage.getItem('friendsList') || '[]');
+      if (!stored.includes(fullName)) {
+        stored.push(fullName);
+        localStorage.setItem('friendsList', JSON.stringify(stored));
+      }
+
+      setSuccessMessage(`Added ${fullName} to your friends!`);
+      setTimeout(() => setSuccessMessage(''), 2500);
+    } catch (err) {
+      const msg = err?.response?.data?.error || err.message;
+      setSuccessMessage(
+        msg === 'Friendship already exists'
+          ? 'Already friends!'
+          : `Could not add friend: ${msg}`
+      );
+      setTimeout(() => setSuccessMessage(''), 2500);
+      console.error('Add friend failed:', err);
     }
-
-    setSuccessMessage(`Added ${fullName} to your friends!`);
-    setTimeout(() => setSuccessMessage(''), 2500);
-
-  } catch (err) {
-    const msg = err?.response?.data?.error || err.message;
-    // Nice duplicate message if backend returns 409
-    setSuccessMessage(msg === 'Friendship already exists'
-      ? 'Already friends!'
-      : `Could not add friend: ${msg}`);
-    setTimeout(() => setSuccessMessage(''), 2500);
-    console.error('Add friend failed:', err);
-  }
   };
 
   const fetchUserProfile = async (userId) => {
@@ -721,6 +720,18 @@ const FriendSearch = () => {
                 onClick={() => handleUserClick(user)}
                 className="table-row"
               >
+                <td>
+                  <button
+                    className="add-friend-btn"
+                    title="Add friend"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickAddFriend(user);
+                    }}
+                  >
+                    <FiUserPlus size={18} />
+                  </button>
+                </td>
                 <td>{user.firstName}</td>
                 <td>{user.lastName}</td>
                 <td>{user.id}</td>
@@ -737,21 +748,6 @@ const FriendSearch = () => {
                 <td>{getField(user, ["targetLanguage", "target_language"])}</td>
                 <td>{user.score !== null ? user.score : "N/A"}</td>
                 <td>{Array.isArray(user.Availability) ? user.Availability.map(a => `${a.day_of_week} ${a.start_time}`).join(', '): ''}</td>
-
-                {/* ➕ Add-Friend button cell */}
-                <td>
-                  <button
-                    className="add-friend-btn"
-                    title="Add friend"
-                    onClick={(e) => {
-                      e.stopPropagation(); // prevent triggering row click
-                      handleQuickAddFriend(user);
-                    }}
-                  >
-                    <FiUserPlus size={18} />
-                    {/* or use <span style={{fontSize: '18px'}}>+</span> if not using react-icons */}
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>

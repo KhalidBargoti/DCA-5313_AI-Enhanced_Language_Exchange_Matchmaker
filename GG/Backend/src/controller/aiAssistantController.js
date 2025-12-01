@@ -91,7 +91,16 @@ async function extractCriteria(userMessage) {
  */
 async function shouldUsePartnerMatching(userMessage) {
   const checkPrompt = `
-    Does the user want to find or get suggestions for practice partners, language exchange partners, or people to practice with?
+    Does the user want to find, match with, search for, or get recommendations for OTHER PEOPLE to practice with (practice partners, language exchange partners, conversation partners)?
+    
+    Answer "yes" ONLY if they are explicitly looking to connect with other users or people.
+    Answer "no" if they are asking for:
+    - Help with language learning activities (reading, writing, grammar, vocabulary)
+    - Translation assistance
+    - Learning tips or advice
+    - General conversation or questions
+    - Practice exercises or materials
+    
     Respond with ONLY "yes" or "no".
     
     User message: "${userMessage}"
@@ -112,7 +121,15 @@ async function shouldUsePartnerMatching(userMessage) {
  */
 async function shouldSummarizeSession(userMessage) {
   const checkPrompt = `
-    Does the user want to summarize, review, or get a summary of a practice session or conversation?
+    Does the user want to summarize, review, or get a summary of a practice session or conversation they had with another user?
+    Answer "yes" ONLY if they are explicitly looking to get a summary of a practice session or conversation.
+    Answer "no" if they are asking for:
+    - Help with language learning activities (reading, writing, grammar, vocabulary)
+    - Translation assistance
+    - Learning tips or advice
+    - General conversation or questions
+    - Practice exercises or materials
+    
     Respond with ONLY "yes" or "no".
     
     User message: "${userMessage}"
@@ -170,12 +187,16 @@ export async function chatWithAssistant(req, res) {
     console.log(`[AI Assistant] User ${numericUserId} sent message: "${message}"`);
 
     // Initialize conversation store for user if not exists
-    if (!conversationStore.has(numericUserId)) {
-      conversationStore.set(numericUserId, []);
+    let conversation = conversationStore.get(numericUserId);
+    if (!conversation) {
+      conversation = {
+        messages: [],
+        state: null,
+        pendingData: {}
+      };
+      conversationStore.set(numericUserId, conversation);
     }
-
-    const conversation = conversationStore.get(numericUserId);
-    conversation.push({ role: "user", content: message });
+    conversation.messages.push({ role: "user", content: message });
 
     let reply;
     let toolUsed = null;
@@ -183,6 +204,9 @@ export async function chatWithAssistant(req, res) {
 
     // Check if user wants partner matching
     const wantsPartnerMatching = await shouldUsePartnerMatching(message);
+    // Check if user wants to summarize a session
+    const wantsSummarize = await shouldSummarizeSession(message);
+
     if (wantsPartnerMatching) {
       toolUsed = "partnerMatching";
       const criteria = await extractCriteria(message);
@@ -190,10 +214,7 @@ export async function chatWithAssistant(req, res) {
       toolResult = await callPartnerMatching(numericUserId, criteria);
       console.log(`[AI Assistant] partnerMatching result:`, toolResult);
       reply = formatToolResponse("partnerMatching", toolResult);
-    } else {
-      // Check if user wants to summarize a session
-      const wantsSummarize = await shouldSummarizeSession(message);
-      if (wantsSummarize) {
+    } else if (wantsSummarize) {
         const chatId = await extractChatId(message);
         if (chatId) {
           try {
@@ -206,37 +227,27 @@ export async function chatWithAssistant(req, res) {
             toolResult = await callSummarizePracticeSession(chatId, numericUserId);
             const modelResponse = await model.generateContent(toolResult.prompt);
             reply = modelResponse.response.text()
-          } catch (privacyError) {
-            throw privacyError;
-            reply = `I'm sorry, but I don't have permission to access that practice session. ${privacyError.message}`;
+          } catch (error) {
+            console.error("Error summarizing practice session:", error);
           }
         } else {
           reply = "I'd be happy to summarize a practice session! Could you please provide the chat ID from that practice session?";
         }
-      } else {
-        // Regular conversational response
-        const chatHistory = conversation
-          .slice(-10) // Last 10 messages for context
-          .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-          .join("\n");
-
-        const prompt = `You are a helpful AI assistant for a language exchange app, where students learning a foreign language are able to practice speaking with students who are native speakers, and both students are able to learn from eath other. Help users find practice partners, answer questions about language learning, summarize their practice sessions, and assist with translation.
-
-Previous conversation:
-${chatHistory}
-
+    } else {
+      // Regular conversational response
+      const chatHistory = conversation.messages
+        .slice(-10) // Last 10 messages for context
+        .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+        .join("\n");
+      const prompt = `You are a helpful AI assistant for a language exchange app, where students learning a foreign language are able to practice speaking with students who are native speakers, and both students are able to learn from eath other. Help users find practice partners, answer questions about language learning, summarize their practice sessions, and assist with translation.
+Previous conversation: ${chatHistory}
 User: ${message}
 Assistant:`;
-
-        const aiResponse = await model.generateContent(prompt);
-        reply = aiResponse.response.text();
-      }
+      const aiResponse = await model.generateContent(prompt);
+      reply = aiResponse.response.text();
     }
 
-    // Add assistant response to conversation
-    conversation.push({ role: "assistant", content: reply });
-
-    return res.json({ reply });
+  return res.json({ reply });
   } catch (err) {
     console.error("chatWithAssistant error:", err);
     res.status(500).json({ error: err.message });
@@ -323,6 +334,51 @@ export async function getConversation(req, res) {
     return res.json({ conversation });
   } catch (err) {
     console.error("getConversation error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getAllAIChats(req, res) {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    // Ensure userId is a number
+    const numericUserId = typeof userId === "string" ? parseInt(userId, 10) : userId;
+    if (isNaN(numericUserId)) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
+    // Fetch previous AI conversations
+    const result = await aiAssistantService.handleGetAIChats(numericUserId);
+
+    // Parse JSON string conversations into objects
+    const parsedChats = result.data.map((chat) => {
+      let parsedConversation;
+      try {
+        parsedConversation = JSON.parse(chat.conversation);
+      } catch (err) {
+        parsedConversation = chat.conversation; // fallback
+      }
+
+      return {
+        id: chat.id,
+        userId: chat.userId,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        conversation: parsedConversation,
+      };
+    });
+
+    return res.json({
+      message: result.errMessage,
+      chats: parsedChats,
+    });
+  } catch (err) {
+    console.error("getAllAIChats error:", err);
     res.status(500).json({ error: err.message });
   }
 }
