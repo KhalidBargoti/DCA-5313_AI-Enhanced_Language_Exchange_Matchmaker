@@ -3,7 +3,13 @@ import ReactMarkdown from "react-markdown";
 import "./Assistant.css";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import Button from "react-bootstrap/Button";
-import {handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation, handleGetAllAIChats} from "../Services/aiAssistantService";
+import {
+  handleChatWithAssistant,
+  handleSaveConversation,
+  handleClearConversation,
+  handleGetConversation,
+  handleGetAllAIChats
+} from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
 import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
 
@@ -24,6 +30,13 @@ export default function Assistant() {
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
 
+  const highlightGoals = (text) => {
+    return text.replace(
+      /Goals for Improvement:/gi,
+      `<span class="highlight-goals">Goals for Improvement:</span>`
+    );
+  };
+
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -36,8 +49,7 @@ export default function Assistant() {
                 setUserId(numericId);
                 return;
               }
-            } catch (err) {
-              console.error("Error fetching user:", err);
+            } catch {
               setError("User not found.");
               return;
             }
@@ -48,8 +60,7 @@ export default function Assistant() {
         if (!prefs?.data?.length) {
           setError("User ID is required in the URL.");
         }
-      } catch (err) {
-        console.error("Error:", err);
+      } catch {
         setError("Failed to fetch user information.");
       }
     };
@@ -57,7 +68,6 @@ export default function Assistant() {
     fetchUserId();
   }, [idFromUrl]);
 
-  // Load all conversation history for sidebar
   useEffect(() => {
     if (!userId) return;
 
@@ -97,9 +107,7 @@ export default function Assistant() {
         });
 
         setHistory(formatted);
-      } catch (err) {
-        console.error("Failed to load chat history:", err);
-      }
+      } catch {}
     };
 
     fetchHistory();
@@ -199,7 +207,6 @@ export default function Assistant() {
 
       setHistory(prev => [newItem, ...prev]);
 
-      // Sync with backend for accurate IDs/timestamps
       const updated = await handleGetAllAIChats(userId);
 
       if (updated?.chats) {
@@ -223,7 +230,6 @@ export default function Assistant() {
 
       alert("Conversation saved!");
     } catch (err) {
-      console.error("Save error:", err);
       alert("Failed to save conversation.");
     }
   };
@@ -239,7 +245,7 @@ export default function Assistant() {
         { role: "assistant", text: "Hi! I'm your Chat Assistant. How can I help?" }
       ]);
       alert("Conversation cleared.");
-    } catch (err) {
+    } catch {
       alert("Failed to clear conversation.");
     }
   };
@@ -248,7 +254,6 @@ export default function Assistant() {
     <div className="assistant-wrap">
       <div className="assistant-layout">
 
-        {/* LEFT SIDEBAR */}
         <div className="assistant-sidebar">
           <div className="sidebar-header">
             <h3>Conversations</h3>
@@ -274,7 +279,6 @@ export default function Assistant() {
           </div>
         </div>
 
-        {/* MAIN CHAT PANEL */}
         <div className="assistant-card">
 
           <div className="assistant-header">
@@ -292,7 +296,7 @@ export default function Assistant() {
             {messages.map((m, i) => (
               <div key={i} className={`msg-row ${m.role === "user" ? "from-user" : "from-assistant"}`}>
                 <div className="msg-bubble">
-                  <ReactMarkdown>{m.text}</ReactMarkdown>
+                  <ReactMarkdown>{highlightGoals(m.text)}</ReactMarkdown>
                 </div>
               </div>
             ))}
