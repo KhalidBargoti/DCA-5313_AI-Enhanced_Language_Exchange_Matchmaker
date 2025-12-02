@@ -1,27 +1,20 @@
-/* ========== PAGE WRAPPER ========== */
 .assistant-wrap {
   min-height: 100vh;
   background: #f6f7fb;
-
-  /* Center both sidebar + chat */
   display: flex;
   justify-content: center;
   align-items: flex-start;
-
   padding: 24px 12px;
 }
 
-/* ========== CENTERING LAYOUT CONTAINER ========== */
 .assistant-layout {
   display: flex;
   flex-direction: row;
   gap: 20px;
-
   max-width: 1200px;
   width: 100%;
 }
 
-/* ========== STATIC SIDEBAR (NO COLLAPSE) ========== */
 .assistant-sidebar {
   width: 260px;
   background: #f0eef7;
@@ -32,7 +25,6 @@
   height: calc(100vh - 48px);
 }
 
-/* Sidebar Header */
 .sidebar-header {
   display: flex;
   justify-content: space-between;
@@ -44,7 +36,6 @@
   margin: 0;
 }
 
-/* Sidebar items */
 .sidebar-list {
   margin-top: 16px;
 }
@@ -69,7 +60,6 @@
   font-style: italic;
 }
 
-/* ========== MAIN CHAT AREA ========== */
 .assistant-card {
   flex: 1;
   max-width: 900px;
@@ -81,7 +71,6 @@
   overflow: hidden;
 }
 
-/* HEADER */
 .assistant-header {
   padding: 16px 20px;
   background: #5b3caf;
@@ -101,7 +90,6 @@
   opacity: 0.9;
 }
 
-/* CHAT BODY */
 .assistant-body {
   height: 60vh;
   overflow-y: auto;
@@ -109,14 +97,15 @@
   background: #faf9ff;
 }
 
-/* MESSAGE BUBBLES */
 .msg-row {
   display: flex;
   margin-bottom: 12px;
 }
+
 .msg-row.from-user {
   justify-content: flex-end;
 }
+
 .msg-row.from-assistant {
   justify-content: flex-start;
 }
@@ -142,7 +131,6 @@
   color: #1d1b2f;
 }
 
-/* INPUT BAR */
 .assistant-inputbar {
   display: flex;
   gap: 10px;
@@ -167,7 +155,6 @@
   border-radius: 10px;
 }
 
-/* FOOTER BUTTONS */
 .assistant-footer {
   display: flex;
   justify-content: flex-end;

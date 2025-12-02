@@ -22,7 +22,6 @@ export async function summarizePracticeSession(args) {
   try {
     const { chatId, userId } = args;
 
-    // Retrieve the transcript from the database
     const transcript = await getTranscriptBySessionId(chatId);
     
     if (!transcript) {
@@ -32,9 +31,8 @@ export async function summarizePracticeSession(args) {
       };
     }
 
-    // Check if the requesting user has access to this transcript
     const hasAccess = transcript.userAccounts?.some(
-      user => user.id === userId
+      user => user.id === Number(userId)
     );
 
     if (!hasAccess) {
@@ -44,17 +42,38 @@ export async function summarizePracticeSession(args) {
       };
     }
 
-    const prompt = `Please provide a detailed summary of the following language practice session transcript. Include:
+    const prompt = `
+You are an AI language tutor. Analyze the following language practice session and provide:
+
+1. Summary of Conversation
 - Main topics discussed
 - Key vocabulary and phrases used
-- Grammar patterns observed
-- Overall flow of the conversation
 - Notable moments or achievements
 
-Transcript:
-${transcript.transcript}`;
+2. Grammar Feedback (Specific & Actionable)
+- Quote exact sentences from the learner containing grammar mistakes
+- Provide corrected versions
+- Give brief explanations of the corrections
 
-    
+3. Word Choice and Naturalness Feedback
+- Identify phrases that sound unnatural or awkward
+- Provide improved alternatives
+- Explain why the alternatives sound more natural
+
+4. Goals for Improvement
+Format exactly like this:
+Goals for Improvement:
+- GOAL 1: ...
+- GOAL 2: ...
+- GOAL 3: ...
+(Provide 3–5 concise goals)
+
+Return the response in clear markdown.
+
+Transcript:
+${transcript.transcript}
+`;
+
     return {
       success: true,
       chatId: transcript.chatId,
@@ -64,7 +83,7 @@ ${transcript.transcript}`;
         name: `${user.firstName} ${user.lastName}`,
         email: user.email
       })),
-      prompt, // The MCP server will use this to call Claude
+      prompt,
       transcriptLength: transcript.transcript.length
     };
 

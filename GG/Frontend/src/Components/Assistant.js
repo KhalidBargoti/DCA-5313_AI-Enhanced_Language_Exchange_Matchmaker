@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import "./Assistant.css";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import Button from "react-bootstrap/Button";
-import {handleChatWithAssistant, handleSaveConversation, handleClearConversation, handleGetConversation, handleGetAllAIChats} from "../Services/aiAssistantService";
+import {
+  handleChatWithAssistant,
+  handleSaveConversation,
+  handleClearConversation,
+  handleGetConversation,
+  handleGetAllAIChats
+} from "../Services/aiAssistantService";
 import { handleUserDashBoardApi } from "../Services/dashboardService";
 import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
 
@@ -11,6 +17,8 @@ export default function Assistant() {
   const [search] = useSearchParams();
   const idFromUrl = search.get("id");
   const navigate = useNavigate();
+  const location = useLocation();
+  const [processedAlerts] = useState(new Set());
 
   const [userId, setUserId] = useState(null);
   const [history, setHistory] = useState([]);
@@ -28,6 +36,12 @@ export default function Assistant() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   // --------------------------------------------------
+  const highlightGoals = (text) => {
+    return text.replace(
+      /Goals for Improvement:/gi,
+      `<span class="highlight-goals">Goals for Improvement:</span>`
+    );
+  };
 
   useEffect(() => {
     // ... (Existing useEffect for fetchUserId remains the same)
@@ -42,8 +56,7 @@ export default function Assistant() {
                 setUserId(numericId);
                 return;
               }
-            } catch (err) {
-              console.error("Error fetching user:", err);
+            } catch {
               setError("User not found.");
               return;
             }
@@ -54,8 +67,7 @@ export default function Assistant() {
         if (!prefs?.data?.length) {
           setError("User ID is required in the URL.");
         }
-      } catch (err) {
-        console.error("Error:", err);
+      } catch {
         setError("Failed to fetch user information.");
       }
     };
@@ -63,7 +75,6 @@ export default function Assistant() {
     fetchUserId();
   }, [idFromUrl]);
 
-  // Load all conversation history for sidebar
   useEffect(() => {
     // ... (Existing useEffect for fetchHistory remains the same)
     if (!userId) return;
@@ -104,9 +115,7 @@ export default function Assistant() {
         });
 
         setHistory(formatted);
-      } catch (err) {
-        console.error("Failed to load chat history:", err);
-      }
+      } catch {}
     };
 
     fetchHistory();
@@ -143,6 +152,25 @@ export default function Assistant() {
       behavior: "smooth"
     });
   }, [messages]);
+
+    useEffect(() => {
+      const slotsAdded = search.get("slotsAdded");
+      if (!slotsAdded) return;
+
+      const alertSignature = `slots:${slotsAdded}`;
+      if (processedAlerts.has(alertSignature)) {
+        console.log("Skipping duplicate alert:", alertSignature);
+        return;
+      }
+      window.alert(`You added ${slotsAdded} to your availability.`);
+      processedAlerts.add(alertSignature);
+      //prevent retriggering
+      const params = new URLSearchParams(location.search);
+      params.delete("slotsAdded");
+      const newSearch = params.toString();
+      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ""}`;
+      window.history.replaceState({}, "", newUrl);
+    }, [search, location.pathname, processedAlerts]);
 
   const loadConversationFromHistory = chat => {
     if (!chat?.messages) return;
@@ -279,7 +307,6 @@ export default function Assistant() {
 
       setHistory(prev => [newItem, ...prev]);
 
-      // Sync with backend for accurate IDs/timestamps
       const updated = await handleGetAllAIChats(userId);
 
       if (updated?.chats) {
@@ -303,7 +330,6 @@ export default function Assistant() {
 
       alert("Conversation saved!");
     } catch (err) {
-      console.error("Save error:", err);
       alert("Failed to save conversation.");
     }
   };
@@ -321,7 +347,7 @@ export default function Assistant() {
       ]);
       setAudioBlob(null);
       alert("Conversation cleared.");
-    } catch (err) {
+    } catch {
       alert("Failed to clear conversation.");
     }
   };
@@ -330,7 +356,6 @@ export default function Assistant() {
     <div className="assistant-wrap">
       <div className="assistant-layout">
 
-        {/* LEFT SIDEBAR */}
         <div className="assistant-sidebar">
             {/* ... (Sidebar remains the same) */}
           <div className="sidebar-header">
@@ -357,7 +382,6 @@ export default function Assistant() {
           </div>
         </div>
 
-        {/* MAIN CHAT PANEL */}
         <div className="assistant-card">
 
           <div className="assistant-header">
@@ -383,7 +407,7 @@ export default function Assistant() {
             {messages.map((m, i) => (
               <div key={i} className={`msg-row ${m.role === "user" ? "from-user" : "from-assistant"}`}>
                 <div className="msg-bubble">
-                  <ReactMarkdown>{m.text}</ReactMarkdown>
+                  <ReactMarkdown>{highlightGoals(m.text)}</ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -430,9 +454,19 @@ export default function Assistant() {
           </form>
 
           <div className="assistant-footer">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+            <Button variant="secondary" onClick={() => navigate("/Dashboard")}>
               Back
             </Button>
+            <Button
+                variant="primary"
+                style={{ marginLeft: "10px" }}
+                onClick={() => {
+                  console.log("Navigating to AvailabilityPicker for userId:", userId);
+                  navigate(`/AvailabilityPicker?id=${userId}&returnTo=Assistant`);
+                }}
+              >
+                Select Availability
+              </Button>
 
             <Button variant="success" onClick={handleSave} style={{ marginLeft: "10px" }}>
               Save to History
