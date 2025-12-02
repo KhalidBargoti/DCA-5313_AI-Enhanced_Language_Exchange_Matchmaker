@@ -3,17 +3,27 @@ import db from '../models/index.js';
 let getUserInterests = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const user = await db.UserProfile.findOne({
-                where: { id: user_id },
-                include: [{ model: db.Interest, as: 'Interests', through: { attributes: [] } }]
+            const userInterests = await db.UserInterest.findAll({
+                where: { user_id },
+                include: [
+                    {
+                        model: db.Interest,
+                        attributes: ['id', 'interest_name']
+                    }
+                ]
             });
-            resolve(user ? user.Interests : []);
+
+            const interests = userInterests
+                .map((ui) => ui.Interest)
+                .filter(Boolean);
+
+            resolve(interests);
         } catch (e) {
             console.error('Error in getUserInterests service:', e);
             reject(e);
         }
-    })
-}
+    });
+};
 
 let addUserInterest = async (user_id, interest_name_or_id) => {
     const isId = typeof interest_name_or_id === 'number';
