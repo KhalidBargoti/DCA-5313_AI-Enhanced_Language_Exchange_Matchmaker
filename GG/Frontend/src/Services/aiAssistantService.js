@@ -8,18 +8,34 @@ import axios from '../Utils/axios';
  * @returns {Promise} AI response
  */
 const handleChatWithAssistant = (message, audioBlob, userId) => {
-    if (message == null && audioBlob == null) {
-        return { 
-          "response" : { 
-              "data" : {
-                  "error" : "No audio or message"
-              }
-          }
-        };
-    } else if (message == null) {
-        console.log("bruh");
+if (!message?.trim() && !audioBlob) {
+        return Promise.reject({ // Use Promise.reject to simulate an error response
+            response: { 
+                data: {
+                    error: "No message or audio file provided."
+                }
+            }
+        });
+    }
+
+    const endpoint = '/api/v1/ai-assistant/chat';
+
+    if (audioBlob) {
+        const formData = new FormData();
+        formData.append('audioFile', audioBlob, 'voice-message.webm'); 
+        
+        formData.append('userId', userId);
+        if (message) {
+             formData.append('message', message);
+        }
+        console.log(formData);
+        return axios.post(endpoint, formData, {
+            headers: {
+            },
+        });
+
     } else {
-        return axios.post('/api/v1/ai-assistant/chat', {
+        return axios.post(endpoint, {
             message: message,
             userId: userId
         });

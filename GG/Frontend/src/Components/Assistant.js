@@ -188,7 +188,6 @@ export default function Assistant() {
         } else {
             response = await handleChatWithAssistant(trimmedInput, null, userId);
         }
-        
         const reply = response.reply || "I'm sorry, I couldn't process that.";
 
         setMessages(m => [...m, { role: "assistant", text: reply }]);
@@ -255,7 +254,6 @@ export default function Assistant() {
   };
 
   const toggleRecording = () => {
-    console.log(isRecording);
     if (isRecording) {
       stopRecording();
     } else {

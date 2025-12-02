@@ -3,12 +3,28 @@ import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js
 import aiAssistantService from "../Service/aiAssistantService.js";
 import { callPartnerMatching, callSummarizePracticeSession, createMcpClient } from "../mcp/client.js";
 import dotenv from "dotenv";
+import fs from "fs";
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 const conversationStore = new Map();
+
+/**
+ * Convert a local file buffer (like one from a multipart form) into a GenerativePart object.
+ * @param {Buffer} buffer The file buffer (e.g., req.files.audioFile.data).
+ * @param {string} mimeType The file's MIME type (e.g., req.files.audioFile.mimetype).
+ * @returns {Part} A Part object for the Gemini API.
+ */
+function fileToGenerativePart(buffer, mimeType) {
+  return {
+    inlineData: {
+      data: buffer.toString("base64"),
+      mimeType,
+    },
+  };
+}
 
 /**
  * Format mcp tool results into user-friendly text
@@ -146,6 +162,19 @@ async function shouldSummarizeSession(userMessage) {
 }
 
 /**
+ * Converts the application's conversation history objects into the
+ * structured array format required by the Google Generative AI SDK.
+ * @param {Array<Object>} messages - Array of message objects {role: string, content: string}
+ * @returns {Array<Object>} Formatted history for the Gemini API.
+ */
+function formatHistory(messages) {
+    return messages.map(msg => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }],
+    }));
+}
+
+/**
  * Extract chatId from user message
  */
 async function extractChatId(userMessage) {
@@ -170,9 +199,9 @@ async function extractChatId(userMessage) {
 export async function chatWithAssistant(req, res) {
   try {
     const { message, userId } = req.body;
-
-    if (!message || !userId) {
-      return res.status(400).json({ error: "Missing message or userId" });
+    const audioFile = req.file;
+    if ((!message && !audioFile) || !userId) {
+      return res.status(400).json({ error: "Missing message/audio or userId" });
     }
 
     // Ensure userId is a number
@@ -184,7 +213,9 @@ export async function chatWithAssistant(req, res) {
       });
     }
 
-    console.log(`[AI Assistant] User ${numericUserId} sent message: "${message}"`);
+    let userMessage = message || "[Audio Message]"; // Use placeholder if only audio is sent
+    
+    console.log(`[AI Assistant] User ${numericUserId} sent message: "${userMessage}"`);
 
     // Initialize conversation store for user if not exists
     let conversation = conversationStore.get(numericUserId);
@@ -196,42 +227,45 @@ export async function chatWithAssistant(req, res) {
       };
       conversationStore.set(numericUserId, conversation);
     }
-    conversation.messages.push({ role: "user", content: message });
+    
+    // Store user's text or placeholder message in history
+    conversation.messages.push({ role: "user", content: userMessage });
 
     let reply;
     let toolUsed = null;
     let toolResult = null;
+    
+    const wantsPartnerMatching = await shouldUsePartnerMatching(userMessage);
+    const wantsSummarize = await shouldSummarizeSession(userMessage);
 
-    // Check if user wants partner matching
-    const wantsPartnerMatching = await shouldUsePartnerMatching(message);
-    // Check if user wants to summarize a session
-    const wantsSummarize = await shouldSummarizeSession(message);
+    if (wantsPartnerMatching || wantsSummarize) {
+        if (wantsPartnerMatching) {
+            toolUsed = "partnerMatching";
+            const criteria = await extractCriteria(userMessage);
+            console.log(`[AI Assistant] Calling partnerMatching for user ${numericUserId} with criteria:`, criteria);
+            toolResult = await callPartnerMatching(numericUserId, criteria);
+            console.log(`[AI Assistant] partnerMatching result:`, toolResult);
+            reply = formatToolResponse("partnerMatching", toolResult);
+        } else if (wantsSummarize) {
+            const chatId = await extractChatId(userMessage);
+            if (chatId) {
+                try {
+                    // Check privacy permissions
+                    await assertParticipant(chatId, numericUserId);
+                    await assertAIAllowed(chatId);
 
-    if (wantsPartnerMatching) {
-      toolUsed = "partnerMatching";
-      const criteria = await extractCriteria(message);
-      console.log(`[AI Assistant] Calling partnerMatching for user ${numericUserId} with criteria:`, criteria);
-      toolResult = await callPartnerMatching(numericUserId, criteria);
-      console.log(`[AI Assistant] partnerMatching result:`, toolResult);
-      reply = formatToolResponse("partnerMatching", toolResult);
-    } else if (wantsSummarize) {
-        const chatId = await extractChatId(message);
-        if (chatId) {
-          try {
-            // Check privacy permissions
-            await assertParticipant(chatId, numericUserId);
-            await assertAIAllowed(chatId);
-
-            toolUsed = "summarizePracticeSession";
-            const client = await createMcpClient();
-            toolResult = await callSummarizePracticeSession(chatId, numericUserId);
-            const modelResponse = await model.generateContent(toolResult.prompt);
-            reply = modelResponse.response.text()
-          } catch (error) {
-            console.error("Error summarizing practice session:", error);
-          }
-        } else {
-          reply = "I'd be happy to summarize a practice session! Could you please provide the chat ID from that practice session?";
+                    toolUsed = "summarizePracticeSession";
+                    const client = await createMcpClient();
+                    toolResult = await callSummarizePracticeSession(chatId, numericUserId);
+                    const modelResponse = await model.generateContent(toolResult.prompt);
+                    reply = modelResponse.response.text();
+                } catch (error) {
+                    console.error("Error summarizing practice session:", error);
+                    reply = "I ran into an issue while trying to summarize that session. Please check the chat ID and permissions.";
+                }
+            } else {
+                reply = "I'd be happy to summarize a practice session! Could you please provide the chat ID from that practice session?";
+            }
         }
     } else {
       // Regular conversational response
@@ -239,15 +273,50 @@ export async function chatWithAssistant(req, res) {
         .slice(-10) // Last 10 messages for context
         .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
         .join("\n");
-      const prompt = `You are a helpful AI assistant for a language exchange app, where students learning a foreign language are able to practice speaking with students who are native speakers, and both students are able to learn from eath other. Help users find practice partners, answer questions about language learning, summarize their practice sessions, and assist with translation.
-Previous conversation: ${chatHistory}
-User: ${message}
-Assistant:`;
-      const aiResponse = await model.generateContent(prompt);
+        
+      const systemInstruction = `You are a helpful AI assistant for a language exchange app, where students learning a foreign language are able to practice speaking with students who are native speakers, and both students are able to learn from eath other. Help users find practice partners, answer questions about language learning, summarize their practice sessions, and assist with translation.`;
+
+      const historyForModel = formatHistory(
+        conversation.messages.slice(0, -1).slice(-10) // up to the last 10 messages before current
+      );
+
+      // --- Construct the current user message (input) ---
+      let userParts = [];
+      
+      if (audioFile) {
+          // Assuming memory storage: audioFile.buffer
+          const audioPart = fileToGenerativePart(audioFile.buffer, audioFile.mimetype); 
+          userParts.push(audioPart);
+      }
+      
+      // Add Text Part
+      userParts.push({ text: userMessage }); 
+
+      // --- CONSTRUCT FINAL CONTENTS ARRAY ---
+      
+      // 1. Prepend the System Instruction as the first message turn (Workaround for older SDK)
+      const contents = [
+          { 
+              role: "user", 
+              parts: [{ text: systemInstruction }] 
+          },
+          { 
+              role: "model", 
+              parts: [{ text: "Acknowledged." }] // Optional acknowledgment turn
+          },
+          ...historyForModel, // Previous turns (after system prompt)
+          { role: "user", parts: userParts } // Current user turn (Audio + Text)
+      ];
+
+      // Call the model using the structured approach, but WITHOUT the config object
+      const aiResponse = await model.generateContent({
+          contents: contents
+          // 🛑 REMOVED: config: { systemInstruction: systemInstruction }
+      });
+      
       reply = aiResponse.response.text();
     }
-
-  return res.json({ reply });
+    return res.json({ reply });
   } catch (err) {
     console.error("chatWithAssistant error:", err);
     res.status(500).json({ error: err.message });
