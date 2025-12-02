@@ -56,7 +56,7 @@ function UserReport() {
                     setHidden(false);
                     setUserInfo({
                         rating: userProfile.rating || "N/A",
-                        proficiency: userProfile.proficiency || "N/A",
+                        proficiency: userProfile.target_language_proficiency || "N/A",
                         comments: userProfile.comments || "N/A",
                     });
                 }

@@ -6,8 +6,8 @@ import { useNavigate, createSearchParams, useSearchParams } from 'react-router-d
 import './VideoRoom.css';
 import { uploadRecording as uploadRecordingService } from '../Services/uploadService.js';
 
-const APP_ID = 'ba8d7ca80c5d4ab2b2b31d145bfec130';
-const TOKEN = '007eJxTYKi8fs5AzOl5r9KFYOYjd/4uLDp/dGK48KwFqg7sbxkkM74rMCQlWqSYJydaGCSbppgkJhkBobFhiqGJaVJaarKhsUH/BK3MhkBGBsHkdhZGBggE8bkZchNLkjNyE7Mz89IZGABaJSI4';
+const APP_ID = '2af8a43cc7624073b48d904de391910e';
+const TOKEN = '007eJxTYODOVixbtOn/1v9hX8MTricJX0hxNZynFcfHeK7YfV1wup4Cg1FimkWiiXFysrmZkYmBuXGSiUWKpYFJSqqxpaGloUFq+SPdzIZARoZHj7czMTJAIIjPzZCbWJKckZuYnZmXzsAAAOlxIaQ=';
 const CHANNEL = 'matchmaking';
 
 export const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -29,10 +29,15 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   const navigate = useNavigate();
   const joinedRef = useRef(false);
 
+  const [participantIds, setParticipantIds] = useState({
+    self: null,
+    partner: null,
+  });
+
   const cleanupCall = async (removeListeners = true) => {
     try {
       if (localTracks.length) await client.unpublish(localTracks);
-    } catch (e) { console.warn('⚠️ Unpublish error:', e); }
+    } catch (e) { console.warn('Unpublish error:', e); }
 
     for (const t of localTracks) {
       try { t.stop(); t.close(); } catch {}
@@ -48,7 +53,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
-    if (audioContextRef.current) {
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
     }
 
@@ -113,8 +118,9 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
         const channel = room || CHANNEL;
         
         // Store promise reference to prevent cleanup race
-        joinPromise = client.join(APP_ID, channel, TOKEN, null);
+        joinPromise = client.join(APP_ID, channel, TOKEN, Number(id));
         const uid = await joinPromise;
+        setParticipantIds(prev => ({ ...prev, self: Number(id) }));
         const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
         if (cancelled) {
           return;
@@ -134,7 +140,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
 
       } catch (err) {
         if (!cancelled) { // Only log real errors, not intentional cancels
-          console.error('❌ Agora init error:', err);
+          console.error('Agora init error:', err);
         }
       }
     };
@@ -167,6 +173,70 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [localTracks]);
 
+  useEffect(() => {
+  let cancelled = false;
+  let joinPromise = null;
+
+  const init = async () => {
+    if (joinedRef.current) return;
+
+    try {
+      const selfIdNum = Number(id);
+
+      // 🔹 remote user joins the channel
+      client.on('user-joined', (user) => {
+        if (user.uid !== selfIdNum) {
+          setParticipantIds(prev => ({
+            ...prev,
+            partner: user.uid,
+          }));
+          console.log('Remote user joined, partner uid =', user.uid);
+        }
+      });
+
+      // 🔹 remote user leaves the channel
+      client.on('user-left', (user) => {
+        console.log('🚪 Remote user left:', user.uid);
+        setUsers(prev => prev.filter(u => u.uid !== user.uid));
+      });
+
+      client.on('user-published', handleUserPublished);
+      client.on('user-unpublished', handleUserUnpublished);
+
+      const channel = room || CHANNEL;
+
+      // join with your app user id as Agora uid
+      joinPromise = client.join(APP_ID, channel, TOKEN, selfIdNum);
+      const uid = await joinPromise;
+
+      setParticipantIds(prev => ({ ...prev, self: selfIdNum }));
+
+      const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+      if (cancelled) return;
+
+      const [audioTrack, videoTrack] = tracks;
+      setLocalTracks(tracks);
+
+      const localUser = { uid, videoTrack, audioTrack };
+      setUsers(prev => (prev.some(u => u.uid === uid) ? prev : [localUser, ...prev]));
+
+      await client.publish(tracks);
+      joinedRef.current = true;
+    } catch (err) {
+      if (!cancelled) {
+        console.error('Agora init error:', err);
+      }
+    }
+  };
+
+  init();
+
+  return () => {
+    cancelled = true;
+    cleanupCall(false);
+  };
+}, []); // deps stay empty
+
   /** UI Handlers - ALL YOUR ORIGINAL CODE UNCHANGED */
   const toggleMute = () => {
     setMuted(prev => {
@@ -177,6 +247,10 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const toggleHideVideo = () => {
+    console.log('People in call:', {
+      selfId: participantIds.self,
+      partnerId: participantIds.partner,
+    });
     setHidden(prev => {
       const next = !prev;
       localTracks[1]?.setEnabled(!next);
@@ -286,7 +360,13 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
 
   const endCall = async () => {
     await cleanupCall(true);
-    navigate({ pathname: '/PostVideocall', search: createSearchParams({ id }).toString() });
+    console.log('Ending call between:', {
+      selfId: participantIds.self,
+      partnerId: participantIds.partner,
+    });
+
+    navigate({ pathname: '/PostVideocall', search: createSearchParams({ id, selfId: participantIds.self,
+      partnerId: participantIds.partner, }).toString() });
   };
 
   const goHome = async () => {
