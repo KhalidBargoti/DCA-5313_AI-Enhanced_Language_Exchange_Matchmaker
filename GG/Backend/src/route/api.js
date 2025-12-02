@@ -45,6 +45,21 @@ const upload = multer({
   }
 });
 
+const memoryStorage = multer.memoryStorage();
+
+// --- 2. Configure Multer Instance ---
+const memoryUpload = multer({ 
+  storage: memoryStorage, // <-- Key Change
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only audio/video files are allowed for recording.'));
+    }
+  }
+});
+
 const initAPIRoute = (app) => { 
     router.get("/meetings/:userId", getMeetingsForUser);
     router.get('/users', APIController.getAllUsers);
@@ -93,7 +108,7 @@ const initAPIRoute = (app) => {
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
 
     // AI routes
-    router.post('/ai-assistant/chat', aiAssistantController.chatWithAssistant);
+    router.post('/ai-assistant/chat', memoryUpload.single('audioFile'), aiAssistantController.chatWithAssistant);
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
     router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
     router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
