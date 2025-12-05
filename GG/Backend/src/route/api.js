@@ -110,6 +110,7 @@ const initAPIRoute = (app) => {
     // AI routes
     router.post('/ai-assistant/chat', memoryUpload.single('audioFile'), aiAssistantController.chatWithAssistant);
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
+    router.post('/ai-assistant/load', aiAssistantController.loadConversationFromDB);
     router.post('/ai-assistant/clear', aiAssistantController.clearConversation);
     router.get('/ai-assistant/conversation/:userId', aiAssistantController.getConversation);
     router.get('/ai-assistant/history/:userId', aiAssistantController.getAllAIChats);

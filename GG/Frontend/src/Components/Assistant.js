@@ -6,6 +6,7 @@ import Button from "react-bootstrap/Button";
 import {
   handleChatWithAssistant,
   handleSaveConversation,
+  handleLoadConversationFromDB,
   handleClearConversation,
   handleGetConversation,
   handleGetAllAIChats
@@ -87,13 +88,40 @@ export default function Assistant() {
         const formatted = chats.map(chat => {
           let conversationArray = chat.conversation;
 
+          // Parse if string (fallback)
           if (typeof conversationArray === "string") {
             try { conversationArray = JSON.parse(conversationArray); }
             catch { conversationArray = []; }
           }
 
-          if (conversationArray?.conversation) {
-            conversationArray = conversationArray.conversation;
+          // If already an array (old format), use it directly
+          if (Array.isArray(conversationArray)) {
+            // Already in correct format, continue
+          }
+          // Handle object formats
+          else if (conversationArray && typeof conversationArray === "object") {
+            // Format: { conversation: { messages: [...], state: null, pendingData: {} } }
+            if (conversationArray.conversation) {
+              const innerConv = conversationArray.conversation;
+              // Check if inner conversation has messages array (new format)
+              if (innerConv && typeof innerConv === "object" && !Array.isArray(innerConv) && innerConv.messages && Array.isArray(innerConv.messages)) {
+                conversationArray = innerConv.messages;
+              } 
+              // Check if inner conversation is an array 
+              else if (Array.isArray(innerConv)) {
+                conversationArray = innerConv;
+              } else {
+                conversationArray = [];
+              }
+            }
+            // Direct new format: { messages: [...], state: null, pendingData: {} }
+            else if (conversationArray.messages && Array.isArray(conversationArray.messages)) {
+              conversationArray = conversationArray.messages;
+            } else {
+              conversationArray = [];
+            }
+          } else {
+            conversationArray = [];
           }
 
           if (!Array.isArray(conversationArray)) {
@@ -172,9 +200,20 @@ export default function Assistant() {
       window.history.replaceState({}, "", newUrl);
     }, [search, location.pathname, processedAlerts]);
 
-  const loadConversationFromHistory = chat => {
-    if (!chat?.messages) return;
-    setMessages(chat.messages);
+  const loadConversationFromHistory = async chat => {
+    if (!chat?.messages || !userId) return;
+    
+    try {
+      // Load conversation into backend store
+      await handleLoadConversationFromDB(chat.id, userId);
+      
+      // Update frontend display
+      setMessages(chat.messages);
+    } catch (err) {
+      console.error("Failed to load conversation:", err);
+      // Still update frontend display even if backend load fails
+      setMessages(chat.messages);
+    }
   };
 
   /**
@@ -313,9 +352,40 @@ export default function Assistant() {
         const formatted = updated.chats.map(chat => {
           let arr = chat.conversation;
           if (typeof arr === "string") {
-            try { arr = JSON.parse(arr); } catch {}
+            try { arr = JSON.parse(arr); } catch { arr = []; }
           }
-          if (arr?.conversation) arr = arr.conversation;
+          
+          // If already an array (old format), use it directly
+          if (Array.isArray(arr)) {
+            // Already in correct format, continue
+          }
+          // Handle object formats
+          else if (arr && typeof arr === "object") {
+            // Format: { conversation: { messages: [...], state: null, pendingData: {} } }
+            // OR Format: { conversation: [...] } (old format wrapped)
+            if (arr.conversation) {
+              const innerConv = arr.conversation;
+              // Check if inner conversation has messages array (new format)
+              if (innerConv && typeof innerConv === "object" && !Array.isArray(innerConv) && innerConv.messages && Array.isArray(innerConv.messages)) {
+                arr = innerConv.messages;
+              } 
+              // Check if inner conversation is an array (old format wrapped)
+              else if (Array.isArray(innerConv)) {
+                arr = innerConv;
+              } else {
+                arr = [];
+              }
+            }
+            // Direct new format: { messages: [...], state: null, pendingData: {} }
+            else if (arr.messages && Array.isArray(arr.messages)) {
+              arr = arr.messages;
+            } else {
+              arr = [];
+            }
+          } else {
+            arr = [];
+          }
+          
           if (!Array.isArray(arr)) arr = [];
           const first = arr.find(m => m.role === "user") || arr[0];
           return {

@@ -223,7 +223,8 @@ export async function chatWithAssistant(req, res) {
       conversation = {
         messages: [],
         state: null,
-        pendingData: {}
+        pendingData: {},
+        chatId: null // Track if this is a continuation of an existing conversation
       };
       conversationStore.set(numericUserId, conversation);
     }
@@ -316,6 +317,10 @@ export async function chatWithAssistant(req, res) {
       
       reply = aiResponse.response.text();
     }
+    
+    // Store assistant's reply in conversation history
+    conversation.messages.push({ role: "assistant", content: reply });
+    
     return res.json({ reply });
   } catch (err) {
     console.error("chatWithAssistant error:", err);
@@ -341,14 +346,22 @@ export async function saveConversation(req, res) {
     }
 
     const conversation = conversationStore.get(numericUserId);
-    if (!conversation || conversation.length === 0) {
+    if (!conversation || !conversation.messages || conversation.messages.length === 0) {
       return res.status(404).json({ error: "No conversation found to save" });
     }
 
-    // Save to database
-    await aiAssistantService.handleSaveAIChat(numericUserId, {
-      conversation: conversation,
-    });
+    // Check if this is a continuation of an existing conversation
+    if (conversation.chatId) {
+      // Update existing conversation
+      await aiAssistantService.handleUpdateAIChat(conversation.chatId, {
+        conversation: conversation,
+      });
+    } else {
+      // Create new conversation
+      await aiAssistantService.handleSaveAIChat(numericUserId, {
+        conversation: conversation,
+      });
+    }
 
     // Clear the conversation from memory
     conversationStore.delete(numericUserId);
@@ -403,6 +416,75 @@ export async function getConversation(req, res) {
     return res.json({ conversation });
   } catch (err) {
     console.error("getConversation error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function loadConversationFromDB(req, res) {
+  try {
+    const { chatId, userId } = req.body;
+
+    if (!chatId || !userId) {
+      return res.status(400).json({ error: "Missing chatId or userId" });
+    }
+
+    // Ensure userId is a number
+    const numericUserId = typeof userId === "string" ? parseInt(userId, 10) : userId;
+    const numericChatId = typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
+    
+    if (isNaN(numericUserId) || isNaN(numericChatId)) {
+      return res.status(400).json({ error: "Invalid userId or chatId" });
+    }
+
+    // Fetch the conversation from database
+    const result = await aiAssistantService.handleGetAIChatById(numericChatId);
+    const chat = result.data;
+
+    // Verify the conversation belongs to the user
+    if (chat.userId !== numericUserId) {
+      return res.status(403).json({ error: "Unauthorized access to conversation" });
+    }
+
+    // Parse the conversation
+    let parsedConversation;
+    try {
+      parsedConversation = JSON.parse(chat.conversation);
+    } catch (err) {
+      parsedConversation = chat.conversation; // fallback
+    }
+
+    // Extract messages array from parsed conversation
+    let messages = [];
+    if (Array.isArray(parsedConversation)) {
+      messages = parsedConversation;
+    } else if (parsedConversation && typeof parsedConversation === "object") {
+      if (parsedConversation.conversation) {
+        const innerConv = parsedConversation.conversation;
+        if (Array.isArray(innerConv)) {
+          messages = innerConv;
+        } else if (innerConv.messages && Array.isArray(innerConv.messages)) {
+          messages = innerConv.messages;
+        }
+      } else if (parsedConversation.messages && Array.isArray(parsedConversation.messages)) {
+        messages = parsedConversation.messages;
+      }
+    }
+
+    // Load into conversationStore
+    const conversation = {
+      messages: messages,
+      state: null,
+      pendingData: {},
+      chatId: numericChatId // Track that this is a continuation
+    };
+    conversationStore.set(numericUserId, conversation);
+
+    return res.json({ 
+      message: "Conversation loaded successfully",
+      conversation: conversation
+    });
+  } catch (err) {
+    console.error("loadConversationFromDB error:", err);
     res.status(500).json({ error: err.message });
   }
 }
