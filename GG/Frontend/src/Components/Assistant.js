@@ -258,6 +258,11 @@ export default function Assistant() {
         const reply = response.reply || "I'm sorry, I couldn't process that.";
 
         setMessages(m => [...m, { role: "assistant", text: reply }]);
+        
+        // Clear text input after successfully sending message
+        if (!isAudioSubmission) {
+          setInput("");
+        }
     } catch (err) {
       const msg = err.response?.data?.error || (isAudioSubmission ? "Failed to send audio." : "Failed to send message.");
       setMessages(m => [...m, { role: "assistant", text: `Error: ${msg}` }]);
@@ -524,7 +529,7 @@ export default function Assistant() {
           </form>
 
           <div className="assistant-footer">
-            <Button variant="secondary" onClick={() => navigate("/Dashboard")}>
+            <Button variant="secondary" onClick={() => navigate(`/Dashboard?id=${userId}`)}>
               Back
             </Button>
             <Button
