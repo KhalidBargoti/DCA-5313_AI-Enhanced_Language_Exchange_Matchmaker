@@ -68,10 +68,40 @@ let handleGetAIChatById = (chatId) => {
   });
 };
 
+/**
+ * Update an existing AI conversation.
+ */
+let handleUpdateAIChat = (chatId, conversation) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await db.AIChatModel.update(
+        {
+          conversation: JSON.stringify(conversation),
+        },
+        {
+          where: { id: chatId },
+        }
+      );
+
+      // Fetch the updated record
+      const updatedChat = await db.AIChatModel.findByPk(chatId);
+
+      const message = {
+        errMessage: "AI chat successfully updated!",
+        data: updatedChat,
+      };
+      resolve(message);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
 const aiAssistantService = {
   handleSaveAIChat,
   handleGetAIChats,
   handleGetAIChatById,
+  handleUpdateAIChat,
 };
 
 export default aiAssistantService;
