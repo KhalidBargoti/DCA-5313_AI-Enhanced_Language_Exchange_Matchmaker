@@ -77,62 +77,73 @@ function UserReport() {
     };
 
     return (
-        <div className="screen-Background">
-            <div className="screen-Container">
-                <div className="screen-Content">
-                    <h2>User Report</h2>
-                    
-                    {/* User dropdown */}
-                    <div className="dropdown-container">
-                        <Select
-                            options={users}
-                            value={selectedUser}
-                            onChange={handleUserChange}
-                            placeholder="Select a user..."
-                            className="user-report-dropdown"
-                        />
-                    </div>
+    <div className="screen-Background">
+        <div className="screen-Container">
+        <div className="screen-Content">
+            <h2>User Report</h2>
+            
+            
+            <div className="dropdown-container">
+            <Select
+                options={users}
+                value={selectedUser}
+                onChange={handleUserChange}
+                placeholder="Select a user..."
+                className="user-report-dropdown"
+            />
+            </div>
 
-                    {/* Conditional rendering based on visibility */}
-                    {hidden ? (
-                        <div className="data-display">
-                            <h3>User Information is Hidden</h3>
-                        </div>
-                    ) : (
-                        userInfo && (
-                            <>
-                                {/* Display rating */}
-                                <div className="data-display">
-                                    <h3>Rating:</h3>
-                                    <p>{userInfo.rating}</p>
-                                </div>
-
-                                {/* Display proficiency */}
-                                <div className="data-display">
-                                    <h3>Proficiency:</h3>
-                                    <p>{userInfo.proficiency}</p>
-                                </div>
-
-                                {/* Display comments */}
-                                <div className="data-display">
-                                    <h3>Comments:</h3>
-                                    <p>{userInfo.comments}</p>
-                                </div>
-                            </>
-                        )
-                    )}
-
-                    {/* Buttons */}
-                    <div className="button-container">
-                        <button className="btn-back-02" onClick={handleBack}>Back</button>
-                        <button className="btn-fetch" onClick={handleFetchUser}>
-                            Fetch User
-                        </button>
-                    </div>
+            
+            {hidden ? (
+            <div className="data-display">
+                <h3>User Information is Hidden</h3>
+            </div>
+            ) : (
+            userInfo && (
+                <>
+                
+                <div className="data-display">
+                    <h3>Rating:</h3>
+                    <p>{userInfo.rating}</p>
                 </div>
+
+                
+                <div className="data-display">
+                    <h3>Proficiency:</h3>
+                    <p>{userInfo.proficiency}</p>
+                </div>
+
+                
+                <div className="data-display">
+                    <h3>Comments:</h3>
+                    <p>{userInfo.comments}</p>
+                </div>
+                </>
+            )
+            )}
+
+            
+            <div
+            className="button-container"
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '20px',
+            }}
+            >
+            <button className="btn-fetch" onClick={handleFetchUser}>
+                Fetch User
+            </button>
+            <button className="btn-back-02" onClick={handleBack}>
+                Back
+            </button>
             </div>
         </div>
+        </div>
+    </div>
     );
-}
-
+    }
+    
 export default UserReport;
