@@ -1,3 +1,26 @@
+/* Make the entire page behind the translator black and full-height */
+.screen-Background {
+  background-color: #000000;
+  min-height: 100vh;          /* fill the whole viewport height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Override any white card styling from other screens */
+.screen-Container {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Same for screen-Content just in case */
+.screen-Content {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* Layout */
 .translator-container {
   display: flex;
@@ -10,14 +33,14 @@
   max-width: 900px;
   padding: 24px 32px;
   border-radius: 16px;
-  background: transparent; /* let your dark bg show through */
+  background: transparent;
 }
 
 .translator-title {
   text-align: center;
   margin-bottom: 20px;
   font-size: 2rem;
-  color: #000000;
+  color: #000000; /* white title pops on black bg */
 }
 
 /* Two-column panel */
@@ -40,14 +63,14 @@
   color: #000000;
 }
 
-/* Dark boxes like the screenshot */
+/* Grey boxes */
 .translator-box {
   width: 100%;
   min-height: 140px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #000000;
-  background-color: #e0e0e0; /* dark grey box */
+  background-color: #e0e0e0;
   color: #000000;
   resize: vertical;
   font-size: 0.95rem;
@@ -56,7 +79,6 @@
 .translator-box::placeholder {
   color: #000000;
 }
-
 
 /* Buttons row */
 .translator-controls {
@@ -70,8 +92,4 @@
 .translator-btn {
   min-width: 140px;
   color: #000000;
-}
-
-.screen-Background {
-  background-color: #000000;
 }
