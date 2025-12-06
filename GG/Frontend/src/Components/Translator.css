@@ -1,143 +1,77 @@
-.centered {  
-  position:fixed;
-  z-index: 100;  
-  top:15%;  
-  left:50%;  
-  margin:-100px 0 0 -100px;  
-  width:200px;  
-  height:200px;  
-}
-
-*{
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
-body{
-    background-color: rgb(26, 26, 26);
-    font-family: sans-serif;
-}
-#ip{
-    width: 500px;
-    min-height: 30px;
-    box-shadow: -3px -3px 5px rgb(63, 63, 63) , 3px 3px 5px black;
-    text-align: center;
-    color: white;
-    letter-spacing: 1px;
-    position: absolute;
-    top: 165px;
-    left: 50%;
-    margin: -50px auto;
-    transform:translateX(-50%) ;
-    font-size: 18px;
-    text-transform: capitalize;
-}
-.keyboard{
-  width: 680px;
-  margin:400px -340px;
+/* Layout */
+.translator-container {
   display: flex;
-  position: fixed;
-  flex-direction: column;
-  align-items: center;
-}
-.row{
-  margin:5px ;
-  user-select: none;
-}
-button{
-  width: 50px;
-  height: 50px;
-  font-weight: bold;
-  margin: 0 4px;
-  border: none;
-  background-color: rgb(255, 255, 255);
-  color: black;
-  box-shadow: -2px -2px 4px rgb(63, 63, 63) , 2px 2px 4px black;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.row4 , .backspace , .space{
-  display: flex;
-  align-items: center;
   justify-content: center;
-}
-.keyboard .backspace , .space{
-  color: black;
-  background-color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-.backspace , .space{
-  border-radius: 5px;
-  box-shadow: -2px -2px 4px rgb(63, 63, 63) , 2px 2px 4px black;
-}
-.keyboard button {
-  width: 50px;
-  height: 50px;
-}
-.keyboard .space {
-  width: 300px;
-  height: 50px;
-}
-.keyboard .backspace {
-  width: 100px;
-  height: 50px;
-  margin-left: 15px;
-}
-textarea {
-  position:fixed;
-  z-index: 100;  
-  top:15%;  
-  left:44%;  
-  margin:-100px 0 0 -100px;  
-  width:200px;  
-  height:50px;
-  color: black;  
-}
-.clear {
-  background:linear-gradient(135deg, rgba(34,193,195,1) 0%,     rgba(253,187,45,1) 100%);
-  position:fixed;
-  z-index: 100;  
-  top:15%;  
-  left:44%;  
-  margin: 250px 20px 100px;
-  width:150px;  
-  height:50px;
-  color: black;  
-}
-.trnslt {
-  background:linear-gradient(135deg, rgba(34,193,195,1) 0%,     rgba(253,187,45,1) 100%);
-  position:fixed;
-  z-index: 100;  
-  top:15%;  
-  left:44%;  
-  margin: 100px 20px 100px;
-  width:150px;  
-  height:50px;
-  border: none;
-  outline: none;
-  color: black;  
-}
-.save {
-  background:linear-gradient(135deg, rgba(34,193,195,1) 0%,     rgba(253,187,45,1) 100%);
-  position:fixed;
-  z-index: 100;  
-  top:15%;  
-  left:44%;  
-  margin: 175px 20px 100px;
-  width:150px;  
-  height:50px;
-  color: black;  
+  align-items: center;
 }
 
-.btn-help {
-  background: linear-gradient(135deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
-  width: 70px;
-  margin: 10px 10px;
-  height: 35px;
-  border-radius: 15px;
-  outline: none;
-  border: none;
-  color: white;
-  float: right;
+.translator-content {
+  width: 100%;
+  max-width: 900px;
+  padding: 24px 32px;
+  border-radius: 16px;
+  background: transparent; /* let your dark bg show through */
+}
+
+.translator-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #000000;
+}
+
+/* Two-column panel */
+.translator-panel {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.translator-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.translator-label {
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  color: #000000;
+}
+
+/* Dark boxes like the screenshot */
+.translator-box {
+  width: 100%;
+  min-height: 140px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #000000;
+  background-color: #e0e0e0; /* dark grey box */
+  color: #000000;
+  resize: vertical;
+  font-size: 0.95rem;
+}
+
+.translator-box::placeholder {
+  color: #000000;
+}
+
+
+/* Buttons row */
+.translator-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.translator-btn {
+  min-width: 140px;
+  color: #000000;
+}
+
+.screen-Background {
+  background-color: #000000;
 }
