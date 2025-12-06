@@ -1,27 +1,24 @@
-/* Make the entire page behind the translator black and full-height */
+/* true */
 .screen-Background {
   background-color: #000000;
-  min-height: 100vh;          /* fill the whole viewport height */
+  min-height: 100vh;          
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* Override any white card styling from other screens */
 .screen-Container {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
 }
 
-/* Same for screen-Content just in case */
 .screen-Content {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
 }
 
-/* Layout */
 .translator-container {
   display: flex;
   justify-content: center;
