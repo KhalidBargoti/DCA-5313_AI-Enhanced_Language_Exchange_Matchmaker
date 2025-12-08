@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { partnerMatching } from "./tools/partnerMatching.js";
 import { summarizePracticeSession } from "./tools/summarizePracticeSession.js";
+import { scheduleMeeting } from "./tools/scheduleMeeting.js";
 import { z } from "zod";
 
 export async function startMCPServer() {
@@ -32,6 +33,18 @@ export async function startMCPServer() {
     },
   }, async (args) => {
     return await summarizePracticeSession(args);
+  });
+
+  server.registerTool("scheduleMeeting", {
+    description: "Schedule a meeting/practice session with another user. Both users must be friends and have overlapping available time slots. The tool will automatically find the first available overlapping slot and schedule the meeting.",
+    inputSchema: {
+      userId: z.number(),
+      targetUserName: z.string().min(1),
+      preferredDay: z.string().optional(),
+      preferredTime: z.string().optional()
+    },
+  }, async (args) => {
+    return await scheduleMeeting(args);
   });
 
   const httpServer = http.createServer();
