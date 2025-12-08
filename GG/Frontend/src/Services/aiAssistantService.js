@@ -82,9 +82,23 @@ const handleGetAllAIChats = (userId) => {
     return axios.get(`/api/v1/ai-assistant/history/${userId}`);
 };
 
+/**
+ * Load a conversation from database into the backend conversation store
+ * @param {number} chatId
+ * @param {number} userId
+ * @returns {Promise} Response with the loaded conversation
+ */
+const handleLoadConversationFromDB = (chatId, userId) => {
+    return axios.post('/api/v1/ai-assistant/load', {
+        chatId: chatId,
+        userId: userId
+    });
+};
+
 export {
     handleChatWithAssistant,
     handleSaveConversation,
+    handleLoadConversationFromDB,
     handleClearConversation,
     handleGetConversation,
     handleGetAllAIChats

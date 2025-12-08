@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js";
 import aiAssistantService from "../Service/aiAssistantService.js";
-import { callPartnerMatching, callSummarizePracticeSession, createMcpClient } from "../mcp/client.js";
+import { callPartnerMatching, callSummarizePracticeSession, callScheduleMeeting, createMcpClient } from "../mcp/client.js";
 import dotenv from "dotenv";
 import fs from "fs";
 dotenv.config();
@@ -70,6 +70,23 @@ function formatToolResponse(toolName, result) {
     return `Practice session summary: ${JSON.stringify(result, null, 2)}`;
   }
 
+  if (toolName === "scheduleMeeting") {
+    if (result.error) {
+      return `I couldn't schedule the meeting: ${result.error}${result.details ? `. ${result.details}` : ''}`;
+    }
+
+    if (result.success) {
+      const { meeting, targetUser } = result;
+      return `Great! I've successfully scheduled a meeting with ${targetUser.firstName} ${targetUser.lastName}.\n\n` +
+             `Meeting Details:\n` +
+             `- Day: ${meeting.day_of_week}\n` +
+             `- Time: ${meeting.start_time} - ${meeting.end_time}\n\n` +
+             `The meeting has been added to your schedule and will appear on your Scheduler page.`;
+    }
+
+    return `Meeting scheduling result: ${JSON.stringify(result, null, 2)}`;
+  }
+
   return `Result from ${toolName}: ${JSON.stringify(result, null, 2)}`;
 }
 
@@ -107,15 +124,14 @@ async function extractCriteria(userMessage) {
  */
 async function shouldUsePartnerMatching(userMessage) {
   const checkPrompt = `
-    Does the user want to find, match with, search for, or get recommendations for OTHER PEOPLE to practice with (practice partners, language exchange partners, conversation partners)?
+    Does the user want to find, search for, discover, or get recommendations for NEW practice partners (OTHER USERS that are NOT FRIENDS) or language exchange partners they haven't met yet?
     
-    Answer "yes" ONLY if they are explicitly looking to connect with other users or people.
-    Answer "no" if they are asking for:
-    - Help with language learning activities (reading, writing, grammar, vocabulary)
-    - Translation assistance
-    - Learning tips or advice
-    - General conversation or questions
-    - Practice exercises or materials
+    Answer "yes" ONLY if they are looking to find NEW people to connect with (browsing, searching, discovering).
+    Answer "no" if they are:
+    - Scheduling a meeting with a SPECIFIC person they already know (use scheduleMeeting instead)
+    - Mentioning a specific name or friend they want to meet with
+    - Asking to book, schedule, arrange, or set up a meeting with someone specific
+    - Asking for help with language learning activities, translation assistance, tips, or general conversation or questions
     
     Respond with ONLY "yes" or "no".
     
@@ -158,6 +174,85 @@ async function shouldSummarizeSession(userMessage) {
   } catch (error) {
     console.error("Error checking summarize intent:", error);
     return false;
+  }
+}
+
+/**
+ * Check if user wants to schedule a meeting
+ */
+async function shouldScheduleMeeting(userMessage) {
+  const checkPrompt = `
+    Does the user want to schedule, book, arrange, set up, or plan a meeting, practice session, or call with a SPECIFIC person or friend they mentioned by name?
+    
+    Answer "yes" if they:
+    - Mention scheduling/booking/arranging a meeting with a specific person
+    - Mention a name or friend they want to meet with
+    - Use words like "schedule", "book", "arrange", "set up", "plan" along with a person's name
+    - Want to schedule a practice session with someone they know
+    
+    Answer "no" if they are:
+    - Looking to find NEW partners (use partnerMatching instead)
+    - Asking for help with language learning activities, translation, tips, or general questions
+    - Not mentioning a specific person to schedule with
+    
+    Respond with ONLY "yes" or "no".
+    
+    User message: "${userMessage}"
+  `;
+
+  try {
+    const response = await model.generateContent(checkPrompt);
+    const text = response.response.text().trim().toLowerCase();
+    return text.includes("yes");
+  } catch (error) {
+    console.error("Error checking schedule meeting intent:", error);
+    return false;
+  }
+}
+
+/**
+ * Extract target user name from user message
+ */
+async function extractTargetUserName(userMessage) {
+  const extractPrompt = `
+    Extract the name of the person that the user wants to schedule a meeting with.
+    
+    Look for:
+    - Full names (e.g., "John Smith")
+    - First names only (e.g., "John")
+    - Names mentioned after phrases like "with", "meeting with", "schedule with", etc.
+    
+    Return ONLY the name(s) found, or "null" if no name is found.
+    If both first and last name are mentioned, return both (e.g., "John Smith").
+    If only first name is mentioned, return just the first name (e.g., "John").
+    Do not include any explanation, quotes, or additional text - just the name or "null".
+    
+    Examples:
+    - "schedule a meeting with Bobby Jones" → "Bobby Jones"
+    - "I want to meet with John" → "John"
+    - "book a session with Sarah" → "Sarah"
+    
+    User message: "${userMessage}"
+  `;
+
+  try {
+    const response = await model.generateContent(extractPrompt);
+    const text = response.response.text().trim();
+    // Remove markdown code blocks, quotes, and extra whitespace
+    const cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .replace(/^["']|["']$/g, '')
+      .trim();
+    
+    if (cleaned.toLowerCase() === "null" || cleaned.length === 0) {
+      return null;
+    }
+    
+    return cleaned;
+  } catch (error) {
+    console.error("Error extracting target user name:", error);
+    return null;
   }
 }
 
@@ -223,7 +318,8 @@ export async function chatWithAssistant(req, res) {
       conversation = {
         messages: [],
         state: null,
-        pendingData: {}
+        pendingData: {},
+        chatId: null // Track if this is a continuation of an existing conversation
       };
       conversationStore.set(numericUserId, conversation);
     }
@@ -235,17 +331,24 @@ export async function chatWithAssistant(req, res) {
     let toolUsed = null;
     let toolResult = null;
     
-    const wantsPartnerMatching = await shouldUsePartnerMatching(userMessage);
+    const wantsScheduleMeeting = await shouldScheduleMeeting(userMessage);
     const wantsSummarize = await shouldSummarizeSession(userMessage);
+    const wantsPartnerMatching = await shouldUsePartnerMatching(userMessage);
 
-    if (wantsPartnerMatching || wantsSummarize) {
-        if (wantsPartnerMatching) {
-            toolUsed = "partnerMatching";
-            const criteria = await extractCriteria(userMessage);
-            console.log(`[AI Assistant] Calling partnerMatching for user ${numericUserId} with criteria:`, criteria);
-            toolResult = await callPartnerMatching(numericUserId, criteria);
-            console.log(`[AI Assistant] partnerMatching result:`, toolResult);
-            reply = formatToolResponse("partnerMatching", toolResult);
+    // Priority order: scheduleMeeting > summarize > partnerMatching
+    // This ensures scheduling takes precedence when a specific user is mentioned
+    if (wantsScheduleMeeting || wantsSummarize || wantsPartnerMatching) {
+        if (wantsScheduleMeeting) {
+            const targetUserName = await extractTargetUserName(userMessage);
+            if (targetUserName) {
+                toolUsed = "scheduleMeeting";
+                console.log(`[AI Assistant] Calling scheduleMeeting for user ${numericUserId} with target: ${targetUserName}`);
+                toolResult = await callScheduleMeeting(numericUserId, targetUserName);
+                console.log(`[AI Assistant] scheduleMeeting result:`, toolResult);
+                reply = formatToolResponse("scheduleMeeting", toolResult);
+            } else {
+                reply = "I'd be happy to schedule a meeting for you! Could you please tell me the name of the user you'd like to schedule a meeting with?";
+            }
         } else if (wantsSummarize) {
             const chatId = await extractChatId(userMessage);
             if (chatId) {
@@ -266,6 +369,13 @@ export async function chatWithAssistant(req, res) {
             } else {
                 reply = "I'd be happy to summarize a practice session! Could you please provide the chat ID from that practice session?";
             }
+        } else if (wantsPartnerMatching) {
+            toolUsed = "partnerMatching";
+            const criteria = await extractCriteria(userMessage);
+            console.log(`[AI Assistant] Calling partnerMatching for user ${numericUserId} with criteria:`, criteria);
+            toolResult = await callPartnerMatching(numericUserId, criteria);
+            console.log(`[AI Assistant] partnerMatching result:`, toolResult);
+            reply = formatToolResponse("partnerMatching", toolResult);
         }
     } else {
       // Regular conversational response
@@ -316,6 +426,10 @@ export async function chatWithAssistant(req, res) {
       
       reply = aiResponse.response.text();
     }
+    
+    // Store assistant's reply in conversation history
+    conversation.messages.push({ role: "assistant", content: reply });
+    
     return res.json({ reply });
   } catch (err) {
     console.error("chatWithAssistant error:", err);
@@ -341,14 +455,22 @@ export async function saveConversation(req, res) {
     }
 
     const conversation = conversationStore.get(numericUserId);
-    if (!conversation || conversation.length === 0) {
+    if (!conversation || !conversation.messages || conversation.messages.length === 0) {
       return res.status(404).json({ error: "No conversation found to save" });
     }
 
-    // Save to database
-    await aiAssistantService.handleSaveAIChat(numericUserId, {
-      conversation: conversation,
-    });
+    // Check if this is a continuation of an existing conversation
+    if (conversation.chatId) {
+      // Update existing conversation
+      await aiAssistantService.handleUpdateAIChat(conversation.chatId, {
+        conversation: conversation,
+      });
+    } else {
+      // Create new conversation
+      await aiAssistantService.handleSaveAIChat(numericUserId, {
+        conversation: conversation,
+      });
+    }
 
     // Clear the conversation from memory
     conversationStore.delete(numericUserId);
@@ -403,6 +525,75 @@ export async function getConversation(req, res) {
     return res.json({ conversation });
   } catch (err) {
     console.error("getConversation error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function loadConversationFromDB(req, res) {
+  try {
+    const { chatId, userId } = req.body;
+
+    if (!chatId || !userId) {
+      return res.status(400).json({ error: "Missing chatId or userId" });
+    }
+
+    // Ensure userId is a number
+    const numericUserId = typeof userId === "string" ? parseInt(userId, 10) : userId;
+    const numericChatId = typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
+    
+    if (isNaN(numericUserId) || isNaN(numericChatId)) {
+      return res.status(400).json({ error: "Invalid userId or chatId" });
+    }
+
+    // Fetch the conversation from database
+    const result = await aiAssistantService.handleGetAIChatById(numericChatId);
+    const chat = result.data;
+
+    // Verify the conversation belongs to the user
+    if (chat.userId !== numericUserId) {
+      return res.status(403).json({ error: "Unauthorized access to conversation" });
+    }
+
+    // Parse the conversation
+    let parsedConversation;
+    try {
+      parsedConversation = JSON.parse(chat.conversation);
+    } catch (err) {
+      parsedConversation = chat.conversation; // fallback
+    }
+
+    // Extract messages array from parsed conversation
+    let messages = [];
+    if (Array.isArray(parsedConversation)) {
+      messages = parsedConversation;
+    } else if (parsedConversation && typeof parsedConversation === "object") {
+      if (parsedConversation.conversation) {
+        const innerConv = parsedConversation.conversation;
+        if (Array.isArray(innerConv)) {
+          messages = innerConv;
+        } else if (innerConv.messages && Array.isArray(innerConv.messages)) {
+          messages = innerConv.messages;
+        }
+      } else if (parsedConversation.messages && Array.isArray(parsedConversation.messages)) {
+        messages = parsedConversation.messages;
+      }
+    }
+
+    // Load into conversationStore
+    const conversation = {
+      messages: messages,
+      state: null,
+      pendingData: {},
+      chatId: numericChatId // Track that this is a continuation
+    };
+    conversationStore.set(numericUserId, conversation);
+
+    return res.json({ 
+      message: "Conversation loaded successfully",
+      conversation: conversation
+    });
+  } catch (err) {
+    console.error("loadConversationFromDB error:", err);
     res.status(500).json({ error: err.message });
   }
 }

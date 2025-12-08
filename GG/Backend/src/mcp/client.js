@@ -125,6 +125,58 @@ export async function callSummarizePracticeSession(chatId, requestingUserId) {
 }
 
 /**
+ * Call the scheduleMeeting tool
+ */
+export async function callScheduleMeeting(userId, targetUserName, preferredDay = null, preferredTime = null) {
+  // Ensure userId is a number
+  const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+  
+  if (isNaN(numericUserId)) {
+    return {
+      error: "Invalid userId provided",
+      details: `userId must be a number, got: ${userId} (type: ${typeof userId})`
+    };
+  }
+
+  if (!targetUserName || typeof targetUserName !== 'string') {
+    return {
+      error: "Invalid targetUserName provided",
+      details: "targetUserName must be a non-empty string"
+    };
+  }
+
+  try {
+    const client = await getMcpClient();
+    
+    const args = {
+      userId: numericUserId,
+      targetUserName: targetUserName
+    };
+    
+    if (preferredDay) {
+      args.preferredDay = preferredDay;
+    }
+    
+    if (preferredTime) {
+      args.preferredTime = preferredTime;
+    }
+    
+    const result = await client.callTool({ 
+      name: "scheduleMeeting", 
+      arguments: args 
+    });
+    
+    return result;
+  } catch (error) {
+    console.error("Error calling scheduleMeeting tool:", error);
+    return {
+      error: "Failed to call scheduleMeeting tool",
+      details: error.message
+    };
+  }
+}
+
+/**
  * Create a new MCP client (for summarizePracticeSession or other tools)
  * Note: This should ideally also use the singleton, but kept separate for now
  */
