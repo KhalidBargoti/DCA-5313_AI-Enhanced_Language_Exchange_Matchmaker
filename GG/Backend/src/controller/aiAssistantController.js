@@ -31,7 +31,8 @@ function fileToGenerativePart(buffer, mimeType) {
  */
 function formatToolResponse(toolName, result) {
   if (result.error) {
-    return `I encountered an error while using ${toolName}: ${result.error}`;
+    console.log(`ERROR: encountered an error while using ${toolName}: ${result.error}`);
+    return "Sorry! I encountered an error and couldn't complete your request. Please try again or contact an administrator.";
   }
 
   if (toolName === "partnerMatching") {
@@ -394,17 +395,12 @@ export async function chatWithAssistant(req, res) {
       let userParts = [];
       
       if (audioFile) {
-          // Assuming memory storage: audioFile.buffer
           const audioPart = fileToGenerativePart(audioFile.buffer, audioFile.mimetype); 
           userParts.push(audioPart);
       }
       
-      // Add Text Part
       userParts.push({ text: userMessage }); 
 
-      // --- CONSTRUCT FINAL CONTENTS ARRAY ---
-      
-      // 1. Prepend the System Instruction as the first message turn (Workaround for older SDK)
       const contents = [
           { 
               role: "user", 
@@ -412,22 +408,19 @@ export async function chatWithAssistant(req, res) {
           },
           { 
               role: "model", 
-              parts: [{ text: "Acknowledged." }] // Optional acknowledgment turn
+              parts: [{ text: "Acknowledged." }]
           },
-          ...historyForModel, // Previous turns (after system prompt)
-          { role: "user", parts: userParts } // Current user turn (Audio + Text)
+          ...historyForModel,
+        { role: "user", parts: userParts }
       ];
 
-      // Call the model using the structured approach, but WITHOUT the config object
       const aiResponse = await model.generateContent({
           contents: contents
-          // 🛑 REMOVED: config: { systemInstruction: systemInstruction }
       });
-      
+
       reply = aiResponse.response.text();
     }
     
-    // Store assistant's reply in conversation history
     conversation.messages.push({ role: "assistant", content: reply });
     
     return res.json({ reply });

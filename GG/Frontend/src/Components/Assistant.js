@@ -248,12 +248,10 @@ export default function Assistant() {
     try {
         let response;
         if (isAudioSubmission) {
-            // --- ⚠️ This requires your backend service (`handleChatWithAssistant`)
-            //     to be able to handle a multipart form submission that contains
-            //     the audio blob and the user ID. ⚠️
             response = await handleChatWithAssistant(null, audioBlob, userId);
         } else {
             response = await handleChatWithAssistant(trimmedInput, null, userId);
+            console.log(response);
         }
         const reply = response.reply || "I'm sorry, I couldn't process that.";
 
@@ -264,8 +262,10 @@ export default function Assistant() {
           setInput("");
         }
     } catch (err) {
-      const msg = err.response?.data?.error || (isAudioSubmission ? "Failed to send audio." : "Failed to send message.");
-      setMessages(m => [...m, { role: "assistant", text: `Error: ${msg}` }]);
+      console.log(`API Error: ${err.response?.data?.error}`);
+      const msg = "Sorry! There was an error on the backend, so I can't respond right now. Please try again or contact an administrator.";
+      console.log(`Message: ${msg}`);
+      setMessages(m => [...m, { role: "assistant", text: msg }]);
     } finally {
       setIsLoading(false);
     }
