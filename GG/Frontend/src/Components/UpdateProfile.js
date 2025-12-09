@@ -77,7 +77,7 @@ function UpdateProfile() {
     { value: "Retail", label: "Retail" },
     { value: "Finance", label: "Finance" },
     { value: "Law", label: "Law" },
-    { value: "Medecine", label: "Medecine" },
+    { value: "Medicine", label: "Medicine" },
     { value: "Scientist", label: "Scientist" },
   ];
 
