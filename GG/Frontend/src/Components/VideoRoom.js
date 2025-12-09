@@ -6,8 +6,8 @@ import { useNavigate, createSearchParams, useSearchParams } from 'react-router-d
 import './VideoRoom.css';
 import { uploadRecording as uploadRecordingService } from '../Services/uploadService.js';
 
-const APP_ID = '2af8a43cc7624073b48d904de391910e';
-const TOKEN = '007eJxTYODOVixbtOn/1v9hX8MTricJX0hxNZynFcfHeK7YfV1wup4Cg1FimkWiiXFysrmZkYmBuXGSiUWKpYFJSqqxpaGloUFq+SPdzIZARoZHj7czMTJAIIjPzZCbWJKckZuYnZmXzsAAAOlxIaQ=';
+const APP_ID = 'ba8d7ca80c5d4ab2b2b31d145bfec130';
+const TOKEN = '007eJxTYPh3WLk07bfITCnzNZG7rfh3TNoUw9O2Jrxs32PnX/Ue93coMCQlWqSYJydaGCSbppgkJhkBobFhiqGJaVJaarKhsUFFjUVmQyAjQ/Dvr0yMDBAI4nMz5CaWJGfkJmZn5qUzMAAAo+8kFQ==';
 const CHANNEL = 'matchmaking';
 
 export const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -118,9 +118,9 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
         const channel = room || CHANNEL;
         
         // Store promise reference to prevent cleanup race
-        joinPromise = client.join(APP_ID, channel, TOKEN, Number(id));
+        joinPromise = client.join(APP_ID, channel, TOKEN, null);
         const uid = await joinPromise;
-        setParticipantIds(prev => ({ ...prev, self: Number(id) }));
+        setParticipantIds(prev => ({ ...prev, self: uid }));
         const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
         if (cancelled) {
           return;
@@ -206,10 +206,10 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
       const channel = room || CHANNEL;
 
       // join with your app user id as Agora uid
-      joinPromise = client.join(APP_ID, channel, TOKEN, selfIdNum);
+      joinPromise = client.join(APP_ID, channel, TOKEN, null);
       const uid = await joinPromise;
 
-      setParticipantIds(prev => ({ ...prev, self: selfIdNum }));
+      setParticipantIds(prev => ({ ...prev, self: uid }));
 
       const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
       if (cancelled) return;
