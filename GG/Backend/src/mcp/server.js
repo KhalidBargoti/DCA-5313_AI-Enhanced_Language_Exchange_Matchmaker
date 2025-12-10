@@ -29,7 +29,7 @@ export async function startMCPServer() {
   server.registerTool("summarizePracticeSession", {
     description: "Summarize a practice session conversation. Only works if AI access was allowed for the session.",
     inputSchema: {
-      chatId: z.number(),
+      chatId: z.string(),
       userId: z.number()
     },
   }, async (args) => {

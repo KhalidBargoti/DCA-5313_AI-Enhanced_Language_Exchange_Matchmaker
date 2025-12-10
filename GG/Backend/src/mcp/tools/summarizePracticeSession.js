@@ -22,6 +22,8 @@ export async function summarizePracticeSession(args) {
   try {
     const { chatId, userId } = args;
 
+    console.log(args);
+
     const transcript = await getTranscriptBySessionId(chatId);
     
     if (!transcript) {
@@ -31,8 +33,10 @@ export async function summarizePracticeSession(args) {
       };
     }
 
-    const hasAccess = transcript.userAccounts?.some(
-      user => user.id === Number(userId)
+    const hasAccess = (
+      transcript.userAccounts?.some(
+        user => user.id === Number(userId)) &&
+      transcript.aiAccess
     );
 
     if (!hasAccess) {

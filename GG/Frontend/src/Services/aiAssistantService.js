@@ -7,7 +7,7 @@ import axios from '../Utils/axios';
  * @param {number} userId
  * @returns {Promise} AI response
  */
-const handleChatWithAssistant = (message, audioBlob, userId) => {
+const handleChatWithAssistant = (message, audioBlob, userId, chatId) => {
 if (!message?.trim() && !audioBlob) {
         return Promise.reject({ // Use Promise.reject to simulate an error response
             response: { 
@@ -28,6 +28,8 @@ if (!message?.trim() && !audioBlob) {
         if (message) {
              formData.append('message', message);
         }
+
+        
         console.log(formData);
         return axios.post(endpoint, formData, {
             headers: {
@@ -37,7 +39,8 @@ if (!message?.trim() && !audioBlob) {
     } else {
         return axios.post(endpoint, {
             message: message,
-            userId: userId
+            userId: userId,
+            chatId: chatId,
         });
     }
 };

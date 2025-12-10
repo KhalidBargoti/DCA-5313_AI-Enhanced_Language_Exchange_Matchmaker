@@ -89,17 +89,18 @@ async function transcribeAudio(filename) {
  * @param {string} sessionId - Unique session identifier
  * @param {string} transcript - The transcript text content
  * @param {number[]} userAccountIds - Array of UserAccount IDs to associate with this transcript
+ * @param {boolean} [aiAccess=false] - Whether AI access is enabled for this transcript
  * @returns {Promise<Object>} The created transcript with associated user accounts
  */
-export async function storeTranscript(sessionId, transcript, userAccountIds) {
-  console.log({sessionId, transcript, userAccountIds});
+export async function storeTranscript(sessionId, transcript, userAccountIds, aiAccess = false) {
+  console.log({sessionId, transcript, userAccountIds, aiAccess});
   try {
     // Create the transcript
     const newTranscript = await db.Transcript.create({
       sessionId,
-      transcript
+      transcript,
+      aiAccess
     });
-
     // Associate user accounts with the transcript
     if (userAccountIds && userAccountIds.length > 0) {
       const transcriptUsers = userAccountIds.map(userAccountId => ({
@@ -109,7 +110,6 @@ export async function storeTranscript(sessionId, transcript, userAccountIds) {
       
       await db.TranscriptUser.bulkCreate(transcriptUsers);
     }
-
     // Fetch and return the transcript with associated user accounts
     const transcriptWithUsers = await db.Transcript.findByPk(newTranscript.id, {
       include: [{
@@ -119,7 +119,6 @@ export async function storeTranscript(sessionId, transcript, userAccountIds) {
         attributes: ['id', 'email', 'firstName', 'lastName'] // Only return needed fields
       }]
     });
-
     return transcriptWithUsers;
   } catch (error) {
     throw new Error(`Failed to store transcript: ${error.message}`);
@@ -143,7 +142,7 @@ function formatLists(lists) {
 }
 
 
-let handleGenerateTranscript = (filename, sessionId, userIds) => {
+let handleGenerateTranscript = (filename, sessionId, userIds, aiAccess) => {
     return new Promise(async (resolve, reject) => {
         try {
             const result = await transcribeAudio(filename);
@@ -152,7 +151,7 @@ let handleGenerateTranscript = (filename, sessionId, userIds) => {
             message.data = formatLists(result.transcription);
             
             // Store it
-            storeTranscript(sessionId, message.data, userIds);
+            storeTranscript(sessionId, message.data, userIds, aiAccess);
 
             resolve(message);
         } catch (e) {

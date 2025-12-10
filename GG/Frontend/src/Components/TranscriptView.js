@@ -46,6 +46,7 @@ function TranscriptView() {
 
         fetchTranscripts();
     }, [id]);
+
     const handleDateChange = (e) => {
         const selectedDate = e.target.value;
         setFilterDate(selectedDate);
@@ -68,6 +69,17 @@ function TranscriptView() {
         } else {
             setExpandedSessionId(sessionId); // Expand this one
         }
+    };
+
+    // Navigate to Assistant page with the chatId
+    const handleContinueChat = (sessionId) => {
+        navigate({
+            pathname: "/Assistant",
+            search: createSearchParams({ 
+                id: id,
+                chatId: sessionId 
+            }).toString(),
+        });
     };
 
     // Navigate back to the dashboard
@@ -141,12 +153,20 @@ function TranscriptView() {
                                                 </div>
                                             )}
 
-                                            <button 
-                                                className={`btn-view-details ${isExpanded ? 'expanded' : ''}`}
-                                                onClick={() => handleToggleTranscript(item.sessionId)}
-                                            >
-                                                {isExpanded ? 'Hide Transcript' : 'Read Full Transcript'}
-                                            </button>
+                                            <div className="transcript-actions">
+                                                <button 
+                                                    className={`btn-view-details ${isExpanded ? 'expanded' : ''}`}
+                                                    onClick={() => handleToggleTranscript(item.sessionId)}
+                                                >
+                                                    {isExpanded ? 'Hide Transcript' : 'Read Full Transcript'}
+                                                </button>
+                                                <button 
+                                                    className="btn-continue-chat"
+                                                    onClick={() => handleContinueChat(item.sessionId)}
+                                                >
+                                                    Summarize with AI
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })

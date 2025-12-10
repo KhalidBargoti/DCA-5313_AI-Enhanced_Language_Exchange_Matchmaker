@@ -39,3 +39,20 @@ export async function assertAIAllowed(chatId) {
   }
   return true;
 }
+
+export async function isAiAccessAllowed(sessionId) {
+  try {
+    const transcript = await db.Transcript.findOne({
+      where: { sessionId },
+      attributes: ['aiAccess']
+    });
+
+    if (!transcript) {
+      throw new Error(`Transcript not found for sessionId: ${sessionId}`);
+    }
+
+    return transcript.aiAccess;
+  } catch (error) {
+    throw new Error(`Failed to check AI access: ${error.message}`);
+  }
+}

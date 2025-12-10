@@ -23,6 +23,11 @@ export async function up(queryInterface, Sequelize) {
     updatedAt: {
       allowNull: false,
       type: Sequelize.DATE
+    },
+    aiAccess: {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   });
 

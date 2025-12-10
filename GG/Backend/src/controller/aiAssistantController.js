@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js";
+import { assertParticipant, assertAIAllowed, isAiAccessAllowed } from "../Service/privacyService.js";
 import aiAssistantService from "../Service/aiAssistantService.js";
 import { callPartnerMatching, callSummarizePracticeSession, callScheduleMeeting, createMcpClient, callPronunciationHelp } from "../mcp/client.js";
 import dotenv from "dotenv";
@@ -94,7 +94,7 @@ function formatToolResponse(toolName, result) {
     if (!success) {
       return "I'm sorry, something went wrong.";
     }
-    let output = "";
+    let output = "Output the following to the user, word for word:\n\n";
     if (numericalRating != null) {
       output += `Your pronunciation is rated at a ${numericalRating} out of 10\n\n`;
     }
@@ -351,7 +351,8 @@ async function extractChatId(userMessage) {
 
 export async function chatWithAssistant(req, res) {
   try {
-    const { message, userId } = req.body;
+    const { message, userId, chatId } = req.body;
+    console.log(req.body);
     const audioFile = req.file;
     if ((!message && !audioFile) || !userId) {
       return res.status(400).json({ error: "Missing message/audio or userId" });
@@ -377,7 +378,6 @@ export async function chatWithAssistant(req, res) {
         messages: [],
         state: null,
         pendingData: {},
-        chatId: null // Track if this is a continuation of an existing conversation
       };
       conversationStore.set(numericUserId, conversation);
     }
@@ -410,18 +410,21 @@ export async function chatWithAssistant(req, res) {
                 reply = "I'd be happy to schedule a meeting for you! Could you please tell me the name of the user you'd like to schedule a meeting with?";
             }
         } else if (wantsSummarize) {
-            const chatId = await extractChatId(userMessage);
+            console.log(chatId);
             if (chatId) {
                 try {
-                    // Check privacy permissions
-                    await assertParticipant(chatId, numericUserId);
-                    await assertAIAllowed(chatId);
+
+                  const allowed = await isAiAccessAllowed(chatId);
+
+                  if (!allowed) {
+                    reply = "Sorry! AI is not allowed in that conversation"; 
+                  } else {
 
                     toolUsed = "summarizePracticeSession";
-                    const client = await createMcpClient();
                     toolResult = await callSummarizePracticeSession(chatId, numericUserId);
                     const modelResponse = await model.generateContent(toolResult.prompt);
                     reply = modelResponse.response.text();
+                  }
                 } catch (error) {
                     console.error("Error summarizing practice session:", error);
                     reply = "I ran into an issue while trying to summarize that session. Please check the chat ID and permissions.";
