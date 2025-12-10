@@ -6,8 +6,8 @@ import { useNavigate, createSearchParams, useSearchParams } from 'react-router-d
 import './VideoRoom.css';
 import { uploadRecording as uploadRecordingService } from '../Services/uploadService.js';
 
-const APP_ID = '2af8a43cc7624073b48d904de391910e';
-const TOKEN = '007eJxTYODOVixbtOn/1v9hX8MTricJX0hxNZynFcfHeK7YfV1wup4Cg1FimkWiiXFysrmZkYmBuXGSiUWKpYFJSqqxpaGloUFq+SPdzIZARoZHj7czMTJAIIjPzZCbWJKckZuYnZmXzsAAAOlxIaQ=';
+const APP_ID = 'a0af2735bfe446cf8a2526d87d1cfe9e';
+const TOKEN = '007eJxTYPjc4r7ZV/zT1VPHrlVo/PZknO54tObsgkX36u1u7bxSKVKiwJBokJhmZG5smpSWamJilpxmkWhkamSWYmGeYpiclmqZ6jLfMrMhkJHh7EZxVkYGCATxuRlyE0uSM3ITszPz0hkYAC1EJQI=';
 const CHANNEL = 'matchmaking';
 
 export const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
