@@ -1,13 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { assertParticipant, assertAIAllowed } from "../Service/privacyService.js";
 import aiAssistantService from "../Service/aiAssistantService.js";
-import { callPartnerMatching, callSummarizePracticeSession, callScheduleMeeting, createMcpClient } from "../mcp/client.js";
+import { callPartnerMatching, callSummarizePracticeSession, callScheduleMeeting, createMcpClient, callPronunciationHelp } from "../mcp/client.js";
 import dotenv from "dotenv";
 import fs from "fs";
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
 
 const conversationStore = new Map();
 
@@ -31,7 +32,8 @@ function fileToGenerativePart(buffer, mimeType) {
  */
 function formatToolResponse(toolName, result) {
   if (result.error) {
-    return `I encountered an error while using ${toolName}: ${result.error}`;
+    console.log(`ERROR: encountered an error while using ${toolName}: ${result.error}`);
+    return "Sorry! I encountered an error and couldn't complete your request. Please try again or contact an administrator.";
   }
 
   if (toolName === "partnerMatching") {
@@ -85,6 +87,20 @@ function formatToolResponse(toolName, result) {
     }
 
     return `Meeting scheduling result: ${JSON.stringify(result, null, 2)}`;
+  }
+
+  if (toolName == "pronunciationHelp") {
+    const { success, numericalRating, qualitativeResponse, savedToDb } = result;
+    if (!success) {
+      return "I'm sorry, something went wrong.";
+    }
+    let output = "";
+    if (numericalRating != null) {
+      output += `Your pronunciation is rated at a ${numericalRating} out of 10\n\n`;
+    }
+
+    output += qualitativeResponse;
+    return output;
   }
 
   return `Result from ${toolName}: ${JSON.stringify(result, null, 2)}`;
@@ -176,6 +192,48 @@ async function shouldSummarizeSession(userMessage) {
     return false;
   }
 }
+
+async function shouldCheckPronunciation(audioFile) {
+  try {
+    if (audioFile == null) {
+      return false;
+    }
+    const audioPart = fileToGenerativePart(audioFile.buffer, audioFile.mimetype); 
+    const checkPrompt = `
+      Does the user want help with pronunciation?
+
+      Answer "yes" if they:
+      - Ask directly for pronunciation help
+      - Ask for feedback on their speaking
+      
+      Answer "no" if they:
+      - Ask a question but do not request feedback on their speaking (we will simply answer the question instead)
+
+      Respond with ONLY "yes" or "no".
+`;
+    const parts = [{ text: checkPrompt }].concat(audioPart);
+    const contents = [
+      {
+        role: "user",
+        parts: parts
+      }
+    ];
+
+    // console.log(JSON.stringify(contents));
+
+    const response = await model.generateContent({
+      contents: contents
+    });
+    const text = response.response.text().trim().toLowerCase();
+    return text.includes("yes");
+
+
+  } catch (error) {
+    console.error("Error checking pronunciation intent: ", error);
+    return false;
+  }
+}
+
 
 /**
  * Check if user wants to schedule a meeting
@@ -331,13 +389,15 @@ export async function chatWithAssistant(req, res) {
     let toolUsed = null;
     let toolResult = null;
     
-    const wantsScheduleMeeting = await shouldScheduleMeeting(userMessage);
-    const wantsSummarize = await shouldSummarizeSession(userMessage);
-    const wantsPartnerMatching = await shouldUsePartnerMatching(userMessage);
+    const wantsScheduleMeeting = message != null ? await shouldScheduleMeeting(userMessage) : false;
+    const wantsSummarize = message != null ? await shouldSummarizeSession(userMessage) : false;
+    const wantsPartnerMatching = message != null ? await shouldUsePartnerMatching(userMessage) : false;
+    const wantsPronunciation = await shouldCheckPronunciation(audioFile);
 
     // Priority order: scheduleMeeting > summarize > partnerMatching
     // This ensures scheduling takes precedence when a specific user is mentioned
-    if (wantsScheduleMeeting || wantsSummarize || wantsPartnerMatching) {
+    const toolCalled = wantsScheduleMeeting || wantsSummarize || wantsPartnerMatching || wantsPronunciation;
+    if (toolCalled) {
         if (wantsScheduleMeeting) {
             const targetUserName = await extractTargetUserName(userMessage);
             if (targetUserName) {
@@ -376,6 +436,16 @@ export async function chatWithAssistant(req, res) {
             toolResult = await callPartnerMatching(numericUserId, criteria);
             console.log(`[AI Assistant] partnerMatching result:`, toolResult);
             reply = formatToolResponse("partnerMatching", toolResult);
+        } else if (wantsPronunciation) {
+            toolUsed = "pronunciationHelp";
+            console.log(`[AI Assistant] Calling pronunciationHelp for user ${numericUserId}`);
+            toolResult = await callPronunciationHelp(
+              fileToGenerativePart(
+                audioFile.buffer,
+                audioFile.mimetype
+              ), 
+              numericUserId);
+            reply = formatToolResponse(toolUsed, toolResult);
         }
     } else {
       // Regular conversational response
@@ -394,17 +464,12 @@ export async function chatWithAssistant(req, res) {
       let userParts = [];
       
       if (audioFile) {
-          // Assuming memory storage: audioFile.buffer
           const audioPart = fileToGenerativePart(audioFile.buffer, audioFile.mimetype); 
           userParts.push(audioPart);
       }
       
-      // Add Text Part
       userParts.push({ text: userMessage }); 
 
-      // --- CONSTRUCT FINAL CONTENTS ARRAY ---
-      
-      // 1. Prepend the System Instruction as the first message turn (Workaround for older SDK)
       const contents = [
           { 
               role: "user", 
@@ -412,22 +477,19 @@ export async function chatWithAssistant(req, res) {
           },
           { 
               role: "model", 
-              parts: [{ text: "Acknowledged." }] // Optional acknowledgment turn
+              parts: [{ text: "Acknowledged." }]
           },
-          ...historyForModel, // Previous turns (after system prompt)
-          { role: "user", parts: userParts } // Current user turn (Audio + Text)
+          ...historyForModel,
+        { role: "user", parts: userParts }
       ];
 
-      // Call the model using the structured approach, but WITHOUT the config object
       const aiResponse = await model.generateContent({
           contents: contents
-          // 🛑 REMOVED: config: { systemInstruction: systemInstruction }
       });
-      
+
       reply = aiResponse.response.text();
     }
     
-    // Store assistant's reply in conversation history
     conversation.messages.push({ role: "assistant", content: reply });
     
     return res.json({ reply });
