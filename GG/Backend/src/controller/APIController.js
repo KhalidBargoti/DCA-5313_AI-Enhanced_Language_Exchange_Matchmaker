@@ -379,7 +379,7 @@ let addTrueFriend = async (req, res) => {
       const b = Math.max(userId1, userId2);
 
       // Insert (handle duplicates)
-      const sql = 'INSERT INTO friendsmodel (user1_id, user2_id) VALUES (?, ?)';
+      const sql = 'INSERT INTO FriendsModel (user1_id, user2_id) VALUES (?, ?)';
       await pool.execute(sql, [a, b]);
 
       return res.status(201).json({ message: 'Friend added', user_one_id: a, user_two_id: b });
@@ -397,7 +397,7 @@ let removeTrueFriend = async (req, res) => {
     const { userId1, userId2 } = req.body; // extract IDs from body
 
     const sql = `
-      DELETE FROM friendsmodel
+      DELETE FROM FriendsModel
       WHERE (user1_id = ? AND user2_id = ?)
          OR (user1_id = ? AND user2_id = ?)
     `;
@@ -422,13 +422,13 @@ let getTrueFriendsList = async (req, res) => {
     const [rows] = await pool.query(
       `
       SELECT u.id, u.firstName, u.lastName, u.email
-      FROM friendsmodel f
-      JOIN useraccount u ON u.id = f.user2_ID
+      FROM FriendsModel f
+      JOIN UserAccount u ON u.id = f.user2_ID
       WHERE f.user1_ID = ?
       UNION
       SELECT u.id, u.firstName, u.lastName, u.email
-      FROM friendsmodel f
-      JOIN useraccount u ON u.id = f.user1_ID
+      FROM FriendsModel f
+      JOIN UserAccount u ON u.id = f.user1_ID
       WHERE f.user2_ID = ?
       `,
       [userId, userId]
@@ -485,7 +485,7 @@ let createMeeting = async (req, res) => {
     // Create meeting
     const [results] = await db.sequelize.query(
       `
-      INSERT INTO meetingmodel (user1_id, user2_id, day_of_week, start_time, end_time)
+      INSERT INTO MeetingModel (user1_id, user2_id, day_of_week, start_time, end_time)
       VALUES (?, ?, ?, ?, ?)
       `,
       {
@@ -519,7 +519,7 @@ let deleteMeeting = async (req, res) => {
 
     const [results] = await db.sequelize.query(
       `
-      DELETE FROM meetingmodel
+      DELETE FROM MeetingModel
       WHERE user1_id = ?
         AND user2_id = ?
         AND day_of_week = ?
