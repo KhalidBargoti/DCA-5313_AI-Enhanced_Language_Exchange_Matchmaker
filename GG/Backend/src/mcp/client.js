@@ -59,7 +59,6 @@ export async function callPronunciationHelp(audioPart, userId) {
     const client = await getMcpClient();
     const args = { audioPart: audioPart, userId: userId };
     const result = await client.callTool({ name: "pronunciationHelp", arguments: args });
-    console.log(`RESULT: ${JSON.stringify(result)}`);
     return result;
 
   } catch (error) {

@@ -25,7 +25,7 @@ export async function pronunciationHelp(args) {
 
     const qualPrompt = `
       Given this audio recording, give the user qualitative feedback on their pronunciation.
-      Do not give the user a numerical grade.
+      Do not give the user a numerical grade. Give the user specific things that they can improve on in their chosen language.
 `;
 
     // rate the user's pronunciation quantitatively
@@ -35,7 +35,13 @@ export async function pronunciationHelp(args) {
       contents: [{ role: "user", parts: quantParts }]
     });
     const quantResponseText = quantResponse.response.text().trim();
-    const numericalRating = parseFloat(quantResponseText);
+    var numericalRating;
+    try {
+      numericalRating = parseFloat(quantResponseText);
+    } catch (err) {
+      console.log("Failed to get numerical rating");
+      numericalRating = null;
+    }
 
     // rate the user's pronunciation qualitatively
     const qualParts = [{ text: qualPrompt }].concat(audioPart);
@@ -46,7 +52,7 @@ export async function pronunciationHelp(args) {
     
     // save to database
     
-    savedToDb = false;
+    const savedToDb = false;
 
     console.log(`Quantitative Score: ${numericalRating}`);
 

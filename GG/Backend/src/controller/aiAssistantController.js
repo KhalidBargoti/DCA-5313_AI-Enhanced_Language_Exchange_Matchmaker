@@ -90,7 +90,17 @@ function formatToolResponse(toolName, result) {
   }
 
   if (toolName == "pronunciationHelp") {
-    return "BRUH";
+    const { success, numericalRating, qualitativeResponse, savedToDb } = result;
+    if (!success) {
+      return "I'm sorry, something went wrong.";
+    }
+    let output = "";
+    if (numericalRating != null) {
+      output += `Your pronunciation is rated at a ${numericalRating} out of 10\n\n`;
+    }
+
+    output += qualitativeResponse;
+    return output;
   }
 
   return `Result from ${toolName}: ${JSON.stringify(result, null, 2)}`;
@@ -435,7 +445,7 @@ export async function chatWithAssistant(req, res) {
                 audioFile.mimetype
               ), 
               numericUserId);
-            reply = formatToolResponse(toolUsed);
+            reply = formatToolResponse(toolUsed, toolResult);
         }
     } else {
       // Regular conversational response
