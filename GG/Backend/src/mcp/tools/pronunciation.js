@@ -1,9 +1,33 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv"; dotenv.config();
+import db from "../../models/index.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
+async function getRatingsByUserId(userId) {
+  const ratings = await db.PronunciationRatings.findAll({
+    where: { userId },
+    attributes: ['rating', 'time'],
+    order: [['time', 'DESC']],
+  });
+
+  return ratings;
+}
+
+export async function addRating(userId, rating) {
+  try {
+    const newRating = await db.PronunciationRating.create({
+      userId,
+      rating,
+      // time will be set automatically via defaultValue
+    });
+    return true;
+  } catch (error) {
+    console.log(`Error adding rating to the database: ${error}`);
+    return false;
+  }
+}
 
 export async function pronunciationHelp(args) {
   try {
@@ -51,6 +75,7 @@ export async function pronunciationHelp(args) {
     const qualResponseText = qualResponse.response.text();
     
     // save to database
+    addRating(userId, numericalRating);
     
     const savedToDb = false;
 
