@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { partnerMatching } from "./tools/partnerMatching.js";
 import { summarizePracticeSession } from "./tools/summarizePracticeSession.js";
 import { scheduleMeeting } from "./tools/scheduleMeeting.js";
+import { pronunciationHelp } from "./tools/pronunciation.js";
 import { z } from "zod";
 
 export async function startMCPServer() {
@@ -45,6 +46,21 @@ export async function startMCPServer() {
     },
   }, async (args) => {
     return await scheduleMeeting(args);
+  });
+
+  server.registerTool("pronunciationHelp", {
+    description: "Help the user with pronunciation and save it to the database.",
+    inputSchema: {
+      audioPart: z.object({
+        inlineData: z.object({
+          data: z.string(),
+          mimeType: z.string()
+        })
+      }),
+      userId: z.number(),
+    }
+  }, async (args) => {
+    return await pronunciationHelp(args);
   });
 
   const httpServer = http.createServer();

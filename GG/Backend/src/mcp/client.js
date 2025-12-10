@@ -46,6 +46,30 @@ export async function getMcpClient() {
   return mcpClientPromise;
 }
 
+export async function callPronunciationHelp(audioPart, userId) {
+  if (audioPart == null) {
+    return {
+      error: "Invalid audioFile provided",
+      details: "audioFile was null!"
+    };
+  }
+
+  try {
+
+    const client = await getMcpClient();
+    const args = { audioPart: audioPart, userId: userId };
+    const result = await client.callTool({ name: "pronunciationHelp", arguments: args });
+    return result;
+
+  } catch (error) {
+    console.error("Error calling pronunciationHelp tool:", error);
+    return {
+      error: "Failed to call pronunciationHelp tool",
+      details: error.message
+    };
+  }
+}
+
 export async function callPartnerMatching(userId, criteria = {}) {
   // Ensure userId is a number
   const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
