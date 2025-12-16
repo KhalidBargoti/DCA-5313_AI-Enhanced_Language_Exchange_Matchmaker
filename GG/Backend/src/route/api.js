@@ -12,6 +12,7 @@ import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
 import recordingController from "../controller/recordingController.js"; // Add this
 import { getMeetingsForUser } from "../controller/meetingController.js";
+import fs from "fs";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -19,10 +20,14 @@ const __dirname = path.dirname(__filename);
 
 let router = express.Router();
 
+const uploadPath = path.join(__dirname, '../uploads/recordings');
+
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/recordings');
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {

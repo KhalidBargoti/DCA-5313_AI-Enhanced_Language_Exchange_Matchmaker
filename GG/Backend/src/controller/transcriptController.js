@@ -1,8 +1,8 @@
 import { handleGenerateTranscript, handleGetTranscripts } from '../Service/transcriptService.js';
 
 let generateTranscript = async (req, res) => {
-    const { filename, sessionId, userIds } = req.body;
-    let messageData = await handleGenerateTranscript(filename, sessionId, userIds);
+    const { filename, sessionId, userIds, aiAccess } = req.body;
+    let messageData = await handleGenerateTranscript(filename, sessionId, userIds, aiAccess);
     return res.status(200).json({
         message: messageData.errMessage,
         messageData: messageData.data ? messageData.data : {}

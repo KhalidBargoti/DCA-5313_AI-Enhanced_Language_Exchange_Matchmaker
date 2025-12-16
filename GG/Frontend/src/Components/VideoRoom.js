@@ -19,6 +19,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   const [hidden, setHidden] = useState(false);
   const [aiAllowed, setAiAllowed] = useState(initialAiAllowed);
   const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const audioContextRef = useRef(null);
@@ -49,7 +50,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
       client.removeAllListeners();
     }
 
-    // Cleanup recording
+    // Cleanup recording without uploading (upload should be done before cleanup)
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
@@ -273,7 +274,6 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const startRecording = async () => {
-    // YOUR ORIGINAL RECORDING CODE - UNCHANGED
     try {
       recordedChunksRef.current = [];
       const audioContext = new AudioContext();
@@ -304,21 +304,7 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        if (recordedChunksRef.current.length === 0) {
-          audioContext.close();
-          return;
-        }
-        try {
-          const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
-          await handleUploadRecording(blob);
-        } catch (error) {
-          console.error('Error processing recording:', error);
-        } finally {
-          recordedChunksRef.current = [];
-          audioContext.close();
-        }
-      };
+      // Remove the onstop handler - we'll handle upload explicitly in stopRecording
 
       audioContextRef.current = audioContext;
       destinationRef.current = destination;
@@ -331,34 +317,74 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const handleUploadRecording = async (blob) => {
-    // YOUR ORIGINAL UPLOAD CODE - UNCHANGED
     if (!(blob instanceof Blob) || blob.size === 0) return;
+    
     const formData = new FormData();
     const filename = `call-${room}-${Date.now()}.webm`;
     formData.append('audio', blob, filename);
-    formData.append('userId', id);
-    formData.append('chatId', chatId || '');
-    formData.append('room', room);
+    formData.append('user1Id', participantIds.self || '');
+    formData.append('user2Id', participantIds.partner || '');
     formData.append('timestamp', new Date().toISOString());
+    formData.append('aiAccess', aiAllowed);
+
+    console.log(formData);
 
     try {
       const response = await uploadRecordingService(formData);
       if (response?.success) {
         setRecordingFilename(response.filename);
+        console.log('Recording uploaded successfully:', response.filename);
       }
     } catch (error) {
       console.error('Error uploading recording:', error);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  const stopRecording = async () => {
+    if (!mediaRecorderRef.current || !isRecording) return;
+
+    setIsUploading(true);
+
+    // Create a promise that resolves when the recorder stops and we have all data
+    const stopPromise = new Promise((resolve) => {
+      mediaRecorderRef.current.onstop = () => {
+        resolve();
+      };
+    });
+
+    // Stop the recorder
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+
+    // Wait for the onstop event to fire (ensures all data is collected)
+    await stopPromise;
+
+    // Now upload the recording
+    if (recordedChunksRef.current.length > 0) {
+      try {
+        const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+        await handleUploadRecording(blob);
+      } catch (error) {
+        console.error('Error processing recording:', error);
+      } finally {
+        recordedChunksRef.current = [];
+      }
     }
+
+    // Close the audio context
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+    }
+
+    setIsUploading(false);
   };
 
   const endCall = async () => {
+    // If recording is in progress, stop and upload first
+    if (isRecording) {
+      await stopRecording();
+    }
+
     await cleanupCall(true);
     console.log('Ending call between:', {
       selfId: participantIds.self,
@@ -370,6 +396,11 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
   };
 
   const goHome = async () => {
+    // If recording is in progress, stop and upload first
+    if (isRecording) {
+      await stopRecording();
+    }
+
     await cleanupCall(true);
     navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() });
   };
@@ -378,8 +409,12 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
     <div className="vr-root">
       <div className="vr-topbar">
         <div className="vr-left">
-          <Button className="vr-btn" variant="primary" size="sm" onClick={goHome}>Home</Button>
-          <Button className="vr-btn" variant="danger" size="sm" onClick={endCall}>End Call</Button>
+          <Button className="vr-btn" variant="primary" size="sm" onClick={goHome} disabled={isUploading}>
+            {isUploading ? 'Uploading...' : 'Home'}
+          </Button>
+          <Button className="vr-btn" variant="danger" size="sm" onClick={endCall} disabled={isUploading}>
+            {isUploading ? 'Uploading...' : 'End Call'}
+          </Button>
         </div>
         <div className="vr-center">
           <Button className="vr-btn" variant="primary" onClick={toggleMute}>
@@ -388,8 +423,13 @@ export default function VideoRoom({ room, initialAiAllowed = true, chatId, curre
           <Button className="vr-btn" variant="primary" onClick={toggleHideVideo}>
             {hidden ? 'Show Video' : 'Hide Video'}
           </Button>
-          <Button className="vr-btn" variant={isRecording ? "danger" : "secondary"} onClick={isRecording ? stopRecording : startRecording}>
-            {isRecording ? '⏹ Stop Recording' : '⏺ Record'}
+          <Button 
+            className="vr-btn" 
+            variant={isRecording ? "danger" : "secondary"} 
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={isUploading}
+          >
+            {isUploading ? '⏳ Uploading...' : isRecording ? '⏹ Stop Recording' : '⏺ Record'}
           </Button>
         </div>
         <div className="vr-right">

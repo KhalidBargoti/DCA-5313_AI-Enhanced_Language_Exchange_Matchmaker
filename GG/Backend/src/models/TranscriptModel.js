@@ -39,6 +39,11 @@ export default (sequelize, DataTypes) => {
       validate: {
         notEmpty: true
       }
+    },
+    aiAccess: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     sequelize,

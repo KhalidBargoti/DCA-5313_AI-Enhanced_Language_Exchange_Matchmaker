@@ -17,11 +17,13 @@ import { handleGetUserPreferencesApi } from "../Services/findFriendsService";
 export default function Assistant() {
   const [search] = useSearchParams();
   const idFromUrl = search.get("id");
+  const chatIdFromUrl = search.get("chatId");
   const navigate = useNavigate();
   const location = useLocation();
   const [processedAlerts] = useState(new Set());
 
   const [userId, setUserId] = useState(null);
+  const [chatId, setChatId] = useState(null);
   const [history, setHistory] = useState([]);
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I'm your Language Exchange Learning Assistant. How can I help?" }
@@ -43,6 +45,14 @@ export default function Assistant() {
       `<span class="highlight-goals">Goals for Improvement:</span>`
     );
   };
+
+  useEffect(() => {
+    // Set chatId from URL parameter and autofill summary request
+    if (chatIdFromUrl) {
+        setChatId(chatIdFromUrl);
+        setInput(`Please summarize my practice session.`);
+      }
+  }, [chatIdFromUrl]);
 
   useEffect(() => {
     // ... (Existing useEffect for fetchUserId remains the same)
@@ -150,7 +160,6 @@ export default function Assistant() {
   }, [userId]);
 
   const loadConversation = useCallback(async () => {
-    // ... (Existing loadConversation remains the same)
     if (!userId) return;
 
     try {
@@ -248,9 +257,9 @@ export default function Assistant() {
     try {
         let response;
         if (isAudioSubmission) {
-            response = await handleChatWithAssistant(null, audioBlob, userId);
+            response = await handleChatWithAssistant(null, audioBlob, userId, chatId);
         } else {
-            response = await handleChatWithAssistant(trimmedInput, null, userId);
+            response = await handleChatWithAssistant(trimmedInput, null, userId, chatId);
             console.log(response);
         }
         const reply = response.reply || "I'm sorry, I couldn't process that.";
